@@ -22,6 +22,7 @@ base_of() {
   case "$1" in
     T0-*|T1-*|T2-*|T3-*) echo 41ac314 ;;
     T4-*|T5-*)           echo d4d15fd ;;
+    R*) sed -n 's/^TASK_BASE=//p' "bench/tasks/$1/config.sh" ;;
     *) return 1 ;;
   esac
 }

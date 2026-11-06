@@ -12,7 +12,7 @@
 # 主な設定（環境変数）:
 #   BENCH_OUT         作業と結果の置き場所（既定: ${TMPDIR:-/tmp}/agent-bench）
 #   BENCH_REPO        対象のリポジトリ（既定: https://github.com/Mika777v/routepense）
-#   BENCH_BASE        土台のコミット（既定: 41ac314。routepense の CLAUDE.md を短くした後の main）
+#   BENCH_BASE        土台のコミット（既定: Task の config.sh の TASK_BASE、無ければ 41ac314。routepense の CLAUDE.md を短くした後の main）
 #   BENCH_TASK        Task（既定: T1-daily-note。tasks/ の下のディレクトリ名）
 #   BENCH_CONDITIONS  条件（既定: "template minimal"）
 #                       template  土台の CLAUDE.md のまま（運用のルールの要点と「いつ何を読むか」）
@@ -49,6 +49,8 @@ info() { printf '%s\n' "$*" >&2; }
 [ -f "$TASK/task.md" ] || die "Task がありません: $TASK"
 # shellcheck disable=SC1091
 . "$TASK/config.sh"
+# 過去の PR をやり直す Task（R*）は、Task ごとに土台が決まっている（config.sh の TASK_BASE）。BENCH_BASE が優先
+[ -z "${BENCH_BASE:-}" ] && [ -n "${TASK_BASE:-}" ] && BASE="$TASK_BASE"
 # 続きの Task は、条件の既定を from-<土台> にする
 if [ -n "$BASES" ] && [ -z "$BENCH_CONDITIONS" ]; then
   CONDITIONS=""; for b in $BASES; do CONDITIONS="$CONDITIONS from-$b"; done
