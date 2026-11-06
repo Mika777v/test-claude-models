@@ -57,6 +57,7 @@
 | 加えて、すべての Task の dry（ベンチの道具・Task を変えたとき。初回は数分） | `CHECK_DRY=1 bash scripts/check.sh` |
 | 1つの Task だけ dry（土台は自動で選ぶ） | `bash scripts/dry-all.sh <ID>` |
 | 結果の表 | `bash bench/run.sh report` |
+| リポジトリの設定をそろえる（マージの方法・自動マージ・`main` の保護と必須チェック `ci-ok`。オーナーが、管理者の `gh` で実行） | `REPO=Mika777v/test-claude-models bash scripts/github/setup-repo.sh` |
 | **AI を動かして測る（オーナーの指示があるときだけ）** | `BENCH_MODEL=<モデル> bash bench/run.sh run` |
 
 - 確認のコマンドは、まとめて1回で実行する
@@ -79,6 +80,7 @@ docs/
   adr/             設計判断の記録
 scripts/check.sh   PR 前の確認（CI の ci.yml と同じ）
 scripts/dry-all.sh すべての Task の dry と判定（CI の bench-dry.yml と同じ）
+scripts/github/setup-repo.sh リポジトリの設定を GitHub の API でそろえる（テンプレートから。マージコミットも許す）
 ```
 
 ## 6. 気をつけること（過去につまずいた点）

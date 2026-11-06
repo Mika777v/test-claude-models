@@ -20,7 +20,7 @@ done < <(git ls-files '*.sh')
 
 step "shellcheck"
 if command -v shellcheck >/dev/null; then
-  shellcheck -S warning bench/run.sh bench/score.sh scripts/*.sh || ng "shellcheck の指摘があります"
+  shellcheck -S warning bench/run.sh bench/score.sh scripts/*.sh scripts/github/*.sh || ng "shellcheck の指摘があります"
   # config.sh は run.sh・score.sh が読み込んで使う変数を並べるだけなので、「使っていない変数」（SC2034）は除く
   shellcheck -s bash -S warning -e SC2034 bench/tasks/*/config.sh || ng "shellcheck の指摘があります（config.sh）"
 else

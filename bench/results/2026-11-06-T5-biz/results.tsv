@@ -1,0 +1,4 @@
+run	tools	turns	tokens	cost_usd	sec	accept_passed	accept_total	suite_ok	typecheck_ok	lint_ok	branch_ok	branch_named	commits_conventional	uncommitted	pr_title_ok	pr_sections_ok	pr_confirm_declared	pr_links_issue	touched_textbook	touched_openapi	touched_frontend	touched_troubleshooting	touched_progress	migration_rewritten	out_of_scope	files_changed
+T5-unique-route-name-template-biz-sonnet-5-5-1	9	10	517158	0.3497975	62	4	4	1	1	1	1	1	1	0	1	1	1	0		1	1	1	0	0	0	10
+T5-unique-route-name-template-biz-sonnet-5-5-2	7	8	384599	0.2029029	71	4	4	1	1	1	1	1	1	0	1	1	0	0		1	0	1	0	0	0	7
+T5-unique-route-name-template-biz-sonnet-5-5-3	7	8	388577	0.2187789	55	4	4	1	1	1	1	1	1	0	1	1	1	0		1	0	1	0	0	0	10
