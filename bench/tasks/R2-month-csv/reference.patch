@@ -1,0 +1,417 @@
+diff --git a/docs/textbook/18-tuple-types.md b/docs/textbook/18-tuple-types.md
+new file mode 100644
+index 0000000..c2df0a6
+--- /dev/null
++++ b/docs/textbook/18-tuple-types.md
+@@ -0,0 +1,148 @@
++# 第18章 タプル型（長さと並びの決まった配列）
++
++## この章で学ぶこと
++
++1. タプル型の定義と、ふつうの配列の型（`string[]`）との違い
++2. `as const` で値からタプル型を作り、マップ型で「同じ長さの別の型」を作る書き方
++3. 列の数の間違いを型エラーで見つけるしくみ
++
++## 前提知識
++
++- 第10章（`satisfies` と `as const`）、第17章（ジェネリクス）
++- Java の配列（`String[]`）と、record（`record Pair(String a, int b)`）
++
++| | Java | TypeScript |
++|---|---|---|
++| 長さの決まらない並び | `String[]`・`List<String>` | `string[]` |
++| 長さと並びの決まった組 | 専用の型を作る（`record Pair(String a, int b)`） | タプル型 `[string, number]`（名前の無い組） |
++| 長さの確認 | 実行時（`ArrayIndexOutOfBoundsException`） | 型チェックのとき（タプルなら） |
++
++Java には、名前の無い「組」の型がありません。TypeScript のタプルは、record を名前無しで、配列の形のまま書いたものと考えると近いです。
++
++## 概念の説明
++
++**定義**: タプル型（tuple type）とは、**要素の数と、それぞれの位置の型が決まった配列の型**です。`[string, number]` は「長さ 2 で、0 番目が `string`、1 番目が `number`」の配列です。
++
++**理由**: CSV の1行や、`Promise.all` の結果（第16章）のように、「位置に意味がある並び」を表すためです。`string[]` だと長さが分からないので、列の足りない行も型チェックを通ってしまいます。
++
++```ts
++const pair: [string, number] = ["自宅↔本社", 220];
++const name = pair[0]; // string
++const fare = pair[1]; // number
++
++const list: string[] = ["a", "b"]; // 何個でもよい
++```
++
++### as const で値からタプルを作る
++
++`as const` を付けた配列リテラルは、`readonly` のタプルになり、要素の型は文字列そのもの（リテラル型）になります。
++
++```ts
++const HEADER = ["日付", "金額"] as const;
++// HEADER の型: readonly ["日付", "金額"]
++
++const loose = ["日付", "金額"];
++// loose の型: string[]（長さも中身も忘れる）
++```
++
++### マップ型で「同じ長さの別の型」を作る
++
++**定義**: マップ型（mapped type）とは、`{ [K in keyof T]: ... }` の形で、**ある型の各プロパティ（要素）を、別の型に置き換えた型**を作る書き方です。`T` が型引数（第17章）でタプルのときは、結果もタプルになります。
++
++```ts
++type AllString<T extends readonly unknown[]> = { -readonly [K in keyof T]: string };
++
++type Row = AllString<typeof HEADER>; // [string, string]（見出しと同じ長さ）
++
++const ok: Row = ["2026-11-04", "440"];
++```
++
++`-readonly` は「`readonly` を外す」という意味です。見出しの `as const` から付いてきた `readonly` を、行の型には持ち込まないために外しています（行はふつうの配列として作って渡すため）。
++
++## このプロジェクトでの実例
++
++`shared/src/csv.ts`（要件定義 F7 の CSV 出力）:
++
++```ts
++export const CSV_HEADER = ["日付", "曜日", "祝日", /* … 13列 … */ "目的"] as const;
++
++type AllString<T extends readonly unknown[]> = { -readonly [K in keyof T]: string };
++
++export type CsvRow = AllString<typeof CSV_HEADER>;
++```
++
++`CsvRow` は「見出しと同じ 13 個の `string` のタプル」です。見出しに列を足すと、`CsvRow` も 14 個に変わり、行を作る `recordRows` の中で列の足りない箇所が型エラーになります。見出しと行の列の数が、1か所（`CSV_HEADER`）から決まります。
++
++その日の共通の4列は、長さ 4 のタプルで返しています。
++
++```ts
++function dayColumns(date: DateString, kind: WorkStyleKind): [string, string, string, string] {
++  return [date, WEEKDAY_LABELS[weekdayOf(date)], holidayName(date) ?? "", WORK_STYLE_LABELS[kind]];
++}
++
++rows.push([...day, "通常", route.from, /* … 残りの 9 列 … */]);
++```
++
++タプルをスプレッド（`...day`）すると、長さ 4 が引き継がれるので、残りの 9 列と合わせて 13 列かどうかを型チェックで確かめられます。戻り値の型を `string[]` にすると、長さが分からなくなり、この確認ができません。
++
++## よくある間違いと、型エラーの読み方
++
++### 間違い1: 列が足りない
++
++```ts
++// 型エラーの例
++const row: CsvRow = ["2026-11-04", "水"];
++// error TS2322: Type '[string, string]' is not assignable to type '[string, string, string, …(13個)]'.
++//   Source has 2 element(s) but target requires 13.
++```
++
++読み方: 「入れた値（source）は 2 個、入れ先（target）は 13 個が必要」。そのまま、足りない列を足します。
++
++### 間違い2: マップ型を型引数を通さずに書く
++
++この章の `AllString` を作る前に、最初は次のように書いて型エラーになりました。
++
++```ts
++// 型エラーの例
++export type CsvRow = { [K in keyof typeof CSV_HEADER]: string };
++
++rows.push([...day, "通常", /* … */]);
++// error TS2345: Argument of type '[string, string, …]' is not assignable to parameter of type 'CsvRow'.
++```
++
++読み方: 13 個の `string` のタプルが、`CsvRow` に入らないと言っています。マップ型がタプルのまま残るのは、`keyof T` の `T` が**型引数**のときだけです。`typeof CSV_HEADER` を直接書くと、配列のメソッド（`map`・`length` など）まで全部 `string` に置き換えたオブジェクトの型になり、タプルではなくなります（そのため `row.map(...)` も `This expression is not callable` になりました）。`AllString<T>` のように型引数を通します。
++
++### 間違い3: `as const` を付け忘れる
++
++```ts
++const HEADER = ["日付", "金額"]; // as const が無い
++type Row = AllString<typeof HEADER>; // string[]（長さが分からない）
++const row: Row = ["2026-11-04"]; // 型エラーにならない
++```
++
++型エラーが出ないのが間違いです。`HEADER` が `string[]` なので、`Row` も `string[]` になり、列の数を確かめられません。
++
++## 練習問題
++
++1. `const point = [1, 2] as const;` の型は何ですか。`point[2]` と書くと、どうなりますか。
++2. `AllString` を参考に、タプルの各要素を `number` にした `AllNumber<T>` を書き、`AllNumber<readonly ["a", "b", "c"]>` が何になるか答えてください。
++3. `dayColumns` の戻り値の型を `string[]` に変えると、`rows.push([...day, …])` はどうなりますか。
++
++## 理解の確認
++
++`CSV_HEADER` に `"メモ2"` を足したとき、ほかに直さなければいけない場所はどこで、それにはどうやって気づけますか。
++
++## 解答
++
++1. 型は `readonly [1, 2]` です。`point[2]` は型エラーになります（`Tuple type 'readonly [1, 2]' of length '2' has no element at index '2'.`）。長さ 2 のタプルに 2 番目（0 から数えて3つめ）は無いからです。
++
++2.
++
++   ```ts
++   type AllNumber<T extends readonly unknown[]> = { -readonly [K in keyof T]: number };
++   type N = AllNumber<readonly ["a", "b", "c"]>; // [number, number, number]
++   ```
++
++3. `[...day, …]` の型が `[...string[], string, …]`（先頭の長さが分からない配列）になり、13 個のタプル `CsvRow` に入らないので型エラーになります（`Target requires 13 element(s) but source may have fewer.`。「少ないかもしれない」と言っている）。長さの確認が必要な場所では、タプルの型を使い続けます。
++
++理解の確認の答え: `recordRows` の中の、行を作る2か所（通常の行と追加の行）です。`CsvRow` が 14 個のタプルに変わるので、13 個しか並べていない2か所が型エラー（`Source has 13 element(s) but target requires 14.`）になって気づけます。テスト（`csv.test.ts`）の期待する値も直します。
+diff --git a/docs/textbook/README.md b/docs/textbook/README.md
+index a01fc4f..4872a63 100644
+--- a/docs/textbook/README.md
++++ b/docs/textbook/README.md
+@@ -22,6 +22,7 @@
+ | 15 | [15-dependency-injection.md](15-dependency-injection.md) | インターフェースと実装の差し替え（依存性の注入） | MVP の後 経路検索の API |
+ | 16 | [16-promise-and-async-await.md](16-promise-and-async-await.md) | 待つ処理の型（Promise と async / await） | MVP の後 経路検索の画面 |
+ | 17 | [17-generics.md](17-generics.md) | ジェネリクス（型を引数にとる型と関数） | 第4・5・7・16章のまとめ（`Result<T>`・`request<T>`・`K extends keyof`） |
++| 18 | [18-tuple-types.md](18-tuple-types.md) | タプル型（長さと並びの決まった配列） | CSV 出力（`CsvRow`） |
+ 
+ これから書く予定の章（`terms-memo.md` を材料にします）:
+ 
+diff --git a/shared/src/csv.test.ts b/shared/src/csv.test.ts
+new file mode 100644
+index 0000000..120efce
+--- /dev/null
++++ b/shared/src/csv.test.ts
+@@ -0,0 +1,110 @@
++import { describe, expect, it } from "vitest";
++import { CSV_HEADER, csvFileName, escapeCsvField, monthCsv, monthCsvRows, UTF8_BOM } from "./csv";
++import type { DailyRecord } from "./daily-record";
++import type { ExtraTrip } from "./extra-trip";
++import { monthlyFare } from "./fare";
++import type { WorkStyle } from "./work-style";
++
++const commute: WorkStyle = {
++  kind: "commute",
++  routeId: "route-1",
++  route: { name: "自宅↔本社", from: "A駅", to: "B駅", transport: "train", oneWayFare: 220 },
++};
++
++function trip(overrides: Partial<ExtraTrip> = {}): ExtraTrip {
++  return { id: "trip-1", from: "B駅", to: "C駅", transport: "bus", oneWayFare: 160, tripType: "oneWay", ...overrides };
++}
++
++function record(date: string, workStyle: WorkStyle, extraTrips: ExtraTrip[] = []): Pick<DailyRecord, "date" | "workStyle" | "extraTrips"> {
++  return { date, workStyle, extraTrips };
++}
++
++describe("monthCsvRows", () => {
++  it("出勤日は通常ルートの1行（往復・金額は片道 × 2）", () => {
++    expect(monthCsvRows([record("2026-11-04", commute)])).toEqual([
++      ["2026-11-04", "水", "", "出勤", "通常", "A駅", "B駅", "電車", "往復", "220", "440", "自宅↔本社", ""],
++    ]);
++  });
++
++  it("在宅・休日で追加の移動が無い日は行を作らない", () => {
++    expect(monthCsvRows([record("2026-11-05", { kind: "remote" }), record("2026-11-07", { kind: "holiday" })])).toEqual([]);
++  });
++
++  it("追加の移動は1件ごとに1行。在宅の日にも付く。ルート名は空、目的を入れる", () => {
++    const rows = monthCsvRows([
++      record("2026-11-05", { kind: "remote" }, [
++        trip({ purpose: "客先B打合せ" }),
++        trip({ id: "trip-2", tripType: "roundTrip", transport: "other" }),
++      ]),
++    ]);
++    expect(rows).toEqual([
++      ["2026-11-05", "木", "", "在宅", "追加", "B駅", "C駅", "バス", "片道", "160", "160", "", "客先B打合せ"],
++      ["2026-11-05", "木", "", "在宅", "追加", "B駅", "C駅", "その他", "往復", "160", "320", "", ""],
++    ]);
++  });
++
++  it("同じ日は通常 → 追加の順。日付の順に並べ、元の配列は並べ替えない", () => {
++    const records = [record("2026-11-10", commute), record("2026-11-04", commute, [trip()])];
++    const rows = monthCsvRows(records);
++    expect(rows.map((row) => [row[0], row[4]])).toEqual([
++      ["2026-11-04", "通常"],
++      ["2026-11-04", "追加"],
++      ["2026-11-10", "通常"],
++    ]);
++    expect(records[0]?.date).toBe("2026-11-10");
++  });
++
++  it("祝日は祝日名を入れる（勤務区分はそのまま）", () => {
++    expect(monthCsvRows([record("2026-11-03", commute)])[0]?.slice(0, 4)).toEqual(["2026-11-03", "火", "文化の日", "出勤"]);
++  });
++
++  it("金額の列の和は、月の合計（monthlyFare）と一致する", () => {
++    const records = [
++      record("2026-11-02", commute, [trip({ tripType: "roundTrip" })]),
++      record("2026-11-03", { kind: "holiday" }, [trip()]),
++      record("2026-11-04", { kind: "remote" }),
++      record("2026-11-05", commute),
++    ];
++    const sum = monthCsvRows(records).reduce((acc, row) => acc + Number(row[10]), 0);
++    expect(sum).toBe(monthlyFare(records).total);
++  });
++});
++
++describe("escapeCsvField", () => {
++  it("カンマ・改行・ダブルクォートが無ければそのまま", () => {
++    expect(escapeCsvField("自宅↔本社")).toBe("自宅↔本社");
++  });
++
++  it("カンマ・改行を含むと \" で囲む", () => {
++    expect(escapeCsvField("A,B")).toBe('"A,B"');
++    expect(escapeCsvField("1行目\n2行目")).toBe('"1行目\n2行目"');
++    expect(escapeCsvField("A\rB")).toBe('"A\rB"');
++  });
++
++  it("中の \" は \"\" に重ねる", () => {
++    expect(escapeCsvField('「"本社"」')).toBe('"「""本社""」"');
++  });
++});
++
++describe("monthCsv", () => {
++  it("BOM・見出し・CRLF の改行で、最後の行にも CRLF が付く", () => {
++    const csv = monthCsv([record("2026-11-04", commute, [trip({ purpose: "打合せ, 資料" })])]);
++    expect(csv.startsWith(UTF8_BOM)).toBe(true);
++    expect(csv.slice(UTF8_BOM.length).split("\r\n")).toEqual([
++      CSV_HEADER.join(","),
++      "2026-11-04,水,,出勤,通常,A駅,B駅,電車,往復,220,440,自宅↔本社,",
++      '2026-11-04,水,,出勤,追加,B駅,C駅,バス,片道,160,160,,"打合せ, 資料"',
++      "",
++    ]);
++  });
++
++  it("記録が無い月は見出しだけ", () => {
++    expect(monthCsv([])).toBe(`${UTF8_BOM}${CSV_HEADER.join(",")}\r\n`);
++  });
++});
++
++describe("csvFileName", () => {
++  it("routepense-YYYY-MM.csv", () => {
++    expect(csvFileName("2026-11")).toBe("routepense-2026-11.csv");
++  });
++});
+diff --git a/shared/src/csv.ts b/shared/src/csv.ts
+new file mode 100644
+index 0000000..b8f6e54
+--- /dev/null
++++ b/shared/src/csv.ts
+@@ -0,0 +1,116 @@
++import type { DailyRecord } from "./daily-record";
++import { weekdayOf, type DateString, type Weekday } from "./date";
++import type { TripType } from "./extra-trip";
++import { extraTripFare, workStyleFare } from "./fare";
++import { holidayName } from "./holidays";
++import type { Transport } from "./route";
++import type { WorkStyleKind } from "./work-style";
++
++/**
++ * 月の明細の CSV（要件定義 F7・U10）。
++ * 1行 = 1つの移動。出勤日の通常ルートで1行、追加の移動1件ごとに1行。移動の無い日は行を作らない。
++ * 画面からも backend からも同じ結果になるよう、shared の純粋関数にしている。
++ */
++
++/** CSV の1行目（見出し）。列の順番は要件定義 F7 の表と同じ */
++export const CSV_HEADER = [
++  "日付",
++  "曜日",
++  "祝日",
++  "勤務区分",
++  "種別",
++  "出発地",
++  "到着地",
++  "交通手段",
++  "片道/往復",
++  "片道運賃",
++  "金額",
++  "ルート名",
++  "目的",
++] as const;
++
++/** タプルの各要素を string にした型（要素の数はそのまま）。型引数 T を通すと、マップ型がタプルのまま残る */
++type AllString<T extends readonly unknown[]> = { -readonly [K in keyof T]: string };
++
++/** 1行の値。見出しと同じ数だけ並ぶ（タプル型にすると、列の数の間違いが型エラーになる） */
++export type CsvRow = AllString<typeof CSV_HEADER>;
++
++const WEEKDAY_LABELS: Record<Weekday, string> = { 0: "日", 1: "月", 2: "火", 3: "水", 4: "木", 5: "金", 6: "土" };
++const WORK_STYLE_LABELS: Record<WorkStyleKind, string> = { remote: "在宅", commute: "出勤", holiday: "休日" };
++const TRANSPORT_LABELS: Record<Transport, string> = { train: "電車", bus: "バス", other: "その他" };
++const TRIP_TYPE_LABELS: Record<TripType, string> = { oneWay: "片道", roundTrip: "往復" };
++
++type CsvRecord = Pick<DailyRecord, "date" | "workStyle" | "extraTrips">;
++
++/** 日次記録の一覧から、明細の行（見出しを除く）を作る。日付の順に並べ、同じ日は通常 → 追加の順 */
++export function monthCsvRows(records: readonly CsvRecord[]): CsvRow[] {
++  // 元の配列は並べ替えない（純粋関数にするため、コピーしてから sort する）
++  const sorted = [...records].sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
++  return sorted.flatMap((record) => recordRows(record));
++}
++
++function recordRows(record: CsvRecord): CsvRow[] {
++  const day = dayColumns(record.date, record.workStyle.kind);
++  const rows: CsvRow[] = [];
++  const workStyle = record.workStyle;
++  if (workStyle.kind === "commute") {
++    const { route } = workStyle;
++    rows.push([
++      ...day,
++      "通常",
++      route.from,
++      route.to,
++      TRANSPORT_LABELS[route.transport],
++      TRIP_TYPE_LABELS.roundTrip, // 通常ルートは常に往復（要件定義 §5 勤務区分）
++      String(route.oneWayFare),
++      String(workStyleFare(workStyle)),
++      route.name,
++      "",
++    ]);
++  }
++  for (const trip of record.extraTrips) {
++    rows.push([
++      ...day,
++      "追加",
++      trip.from,
++      trip.to,
++      TRANSPORT_LABELS[trip.transport],
++      TRIP_TYPE_LABELS[trip.tripType],
++      String(trip.oneWayFare),
++      String(extraTripFare(trip)),
++      "",
++      trip.purpose ?? "",
++    ]);
++  }
++  return rows;
++}
++
++/** 日付・曜日・祝日・勤務区分の4列（その日の行で共通） */
++function dayColumns(date: DateString, kind: WorkStyleKind): [string, string, string, string] {
++  return [date, WEEKDAY_LABELS[weekdayOf(date)], holidayName(date) ?? "", WORK_STYLE_LABELS[kind]];
++}
++
++/**
++ * 1つの値を CSV の欄にする（RFC 4180）。
++ * カンマ・改行・`"` を含むときだけ `"` で囲み、中の `"` は `""` に重ねる。
++ */
++export function escapeCsvField(value: string): string {
++  if (/[",\r\n]/.test(value)) {
++    return `"${value.replaceAll('"', '""')}"`;
++  }
++  return value;
++}
++
++/** Excel が UTF-8 だと見分けるための印（BOM: Byte Order Mark） */
++export const UTF8_BOM = "﻿";
++
++/** 月の明細の CSV の文字列（BOM・見出し付き、改行は CRLF。最後の行にも CRLF を付ける） */
++export function monthCsv(records: readonly CsvRecord[]): string {
++  const lines = [CSV_HEADER, ...monthCsvRows(records)].map((row) => row.map(escapeCsvField).join(","));
++  return UTF8_BOM + lines.map((line) => `${line}\r\n`).join("");
++}
++
++/** 保存するファイルの名前。month は YYYY-MM */
++export function csvFileName(month: string): string {
++  return `routepense-${month}.csv`;
++}
+diff --git a/shared/src/index.ts b/shared/src/index.ts
+index d4e8be2..08ccb73 100644
+--- a/shared/src/index.ts
++++ b/shared/src/index.ts
+@@ -9,6 +9,8 @@ export { nextDate, weekdayOf } from "./date";
+ export { HOLIDAY_YEARS, HOLIDAYS, holidayName } from "./holidays";
+ export type { ExtraTrip, ExtraTripInput, TripType } from "./extra-trip";
+ export type { MonthlyFare } from "./fare";
++export type { CsvRow } from "./csv";
++export { CSV_HEADER, csvFileName, escapeCsvField, monthCsv, monthCsvRows, UTF8_BOM } from "./csv";
+ export { assertNever, dailyFare, extraTripFare, monthlyFare, workStyleFare } from "./fare";
+ export type { Route, RouteInput, RouteSnapshot, Transport } from "./route";
+ export { TRANSPORTS } from "./route";

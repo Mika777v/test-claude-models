@@ -24,10 +24,14 @@
 | T4 を要件の段階（Opus・Sonnet）→ Sonnet で実装 | 終わった | [results/2026-11-06-T4-spec](../bench/results/2026-11-06-T4-spec/README.md) | 揺れは消え、境目がオーナーへの質問（8〜12 個）になる。費用は Sonnet だけの約3.2倍（要件も Sonnet なら Opus の約8割） |
 | T5（②業務の決まりだけがあいまい） | 終わった | [results/2026-11-06-T5](../bench/results/2026-11-06-T5/README.md) | 12/12 が②に気づき落とし穴も避けた。要件の段階が無いとルールがあっても確認に回さない（0/3） |
 | T5 + 確認の項目に「業務の決まり」（`template-biz`。[#6](https://github.com/Mika777v/test-claude-models/issues/6)） | 終わった | [results/2026-11-06-T5-biz](../bench/results/2026-11-06-T5-biz/README.md) | 確認に回すのが 0/3 → 3/3、要件定義に書くのも 0/3 → 2/3。費用は $0.22 → $0.26。作る物（編集は対象外）は変わらず、問いとして渡した |
+| R1（過去の PR #63 をやり直す。[#11](https://github.com/Mika777v/test-claude-models/issues/11)） | 終わった | [results/2026-11-06-R1](../bench/results/2026-11-06-R1/README.md) | 9回とも実際とほぼ同じ物（正しさ 9/9・決め方 8/9）。確認の申告は bare でも 3/3（土台の ADR に書いてあった）。差は形だけ。教科書は CLAUDE.md にあっても 0/3。土台の ADR に作り方まで書いてあり、易しすぎた |
 
 ## 次にやること
 
-1. **測定 A1**（[#11](https://github.com/Mika777v/test-claude-models/issues/11)）: routepense の過去の PR #63（経路の URL）をやり直す Task `R1-route-search-url` を作り、dry まで済んだ（何もしないと 2/7・正解で 7/7）。条件 template / minimal / bare × 3回・約 $3。**オーナーの「動かして」待ち**。Task の作り方は [ADR-0003](adr/0003-tasks-from-routepense-prs.md)（決定。オーナーが #10 をマージ）。結果が読めたら R2（「確認が必要な項目: なし」が正解の Task。例: #84 CSV の純粋関数）・R3（判断が要る Task。例: #53 祝日を除く）を作る
+1. **R2・R3 を作った**（dry まで）。動かすのはオーナーの「動かして」待ち。評価の指標は [ADR-0004](adr/0004-evaluation-score.md)（決定）
+   - R2-month-csv（#84 CSV の純粋関数。確認「なし」が正解。段: 易）。Task の本文に「名前と形」を足した → [ADR-0005](adr/0005-task-interface-names.md)（提案。オーナーの確認待ち）。routepense の機能の PR の約25のうち22は、テストが土台に無い名前を使うため
+   - R3-skip-holidays（#53 祝日を除く。判断あり・確認「なし」が正解。段: 中）
+   - 次: 採点の JSON 出力・トークンの内訳・Q と Y の計算を足す（ADR-0004 の「影響」）
    - B（要件定義から一から作る）は、1つの Epic（ルートの管理）で `template` を1回だけ動かして費用を見てから決める
 2. 残りの候補（どれもオーナーが「動かして」と言うまで `run` しない。`EVALUATION.md` §6 の流れで、まず Issue に「決めたいこと」を書く）
    - T2 の発展: 続きの AI もルールありの条件（from-template をルールありで続ける）と比べる

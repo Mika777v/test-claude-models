@@ -3,6 +3,7 @@
 # 受け入れテストは PR #63 で足されたテスト7つ（そのまま）。うち次の3つは Issue に無く、オーナー（実際の PR）が決めたこと:
 #   空・空白だけ・null なら項目を付けない / 2000文字まで / URL が無いときは項目ごと無い（null を返さない）
 # 土台でも通るテスト（前からの動きを守るもの）: 空・空白だけ・null なら付けない / URL の列が無い古い DB のルートが読める。dry の「何もしない」が 2/7 なのはこのため
+# 土台の文書に答えがある: docs/adr/0002-route-search.md の「作り」に型・列・受け口の作り方と「DB のスキーマの変更なので、その PR もオーナーが確認する」。docs/PROGRESS.md にも「#58 … needs-confirm」
 TASK_BASE=27d8df0
 ACCEPTANCE="backend/src/routes/search-url-parse.acceptance.test.ts=search-url-parse.acceptance.test.ts backend/src/routes/search-url-router.acceptance.test.ts=search-url-router.acceptance.test.ts backend/src/routes/search-url-repository.acceptance.test.ts=search-url-repository.acceptance.test.ts"
 # 正解: 実際の PR は DB のスキーマの変更を申告した
