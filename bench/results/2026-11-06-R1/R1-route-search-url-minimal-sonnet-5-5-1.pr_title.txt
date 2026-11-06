@@ -1,0 +1,1 @@
+feat(shared,backend): ルートに経路結果の URL（searchUrl）を追加

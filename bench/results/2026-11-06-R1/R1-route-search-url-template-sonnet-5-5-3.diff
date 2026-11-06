@@ -1,0 +1,292 @@
+diff --git a/backend/src/db/migrations.ts b/backend/src/db/migrations.ts
+index 0b243a5..e7a2c93 100644
+--- a/backend/src/db/migrations.ts
++++ b/backend/src/db/migrations.ts
+@@ -69,4 +69,11 @@ export const migrations: readonly { version: number; sql: string }[] = [
+       CREATE INDEX extra_trips_daily_record_id ON extra_trips (daily_record_id);
+     `,
+   },
++  {
++    version: 3,
++    sql: `
++      -- 経路結果のページの URL（ADR-0002）。NULL 可なので、既存のルートはそのまま読める
++      ALTER TABLE routes ADD COLUMN search_url TEXT;
++    `,
++  },
+ ];
+diff --git a/backend/src/routes/parse-route-input.test.ts b/backend/src/routes/parse-route-input.test.ts
+index 70c5f0a..b9347bd 100644
+--- a/backend/src/routes/parse-route-input.test.ts
++++ b/backend/src/routes/parse-route-input.test.ts
+@@ -52,4 +52,38 @@ describe("parseRouteInput", () => {
+   it("誤りが複数あれば、全部まとめて返す", () => {
+     expect(fields({})).toEqual(["name", "from", "to", "transport", "oneWayFare"]);
+   });
++
++  describe("searchUrl（経路の URL）", () => {
++    const url = "https://roote.ekispert.net/result?arr=B&dep=A";
++
++    it("無い・null・空白だけなら、項目なしで ok", () => {
++      expect(parseRouteInput(valid)).toEqual({ ok: true, value: valid });
++      expect(parseRouteInput({ ...valid, searchUrl: null })).toEqual({ ok: true, value: valid });
++      expect(parseRouteInput({ ...valid, searchUrl: "  " })).toEqual({ ok: true, value: valid });
++    });
++
++    it("http:// と https:// の URL は通り、前後の空白を取り除く", () => {
++      expect(parseRouteInput({ ...valid, searchUrl: ` ${url} ` })).toEqual({
++        ok: true,
++        value: { ...valid, searchUrl: url },
++      });
++      expect(fields({ ...valid, searchUrl: "http://example.com/a" })).toEqual([]);
++    });
++
++    it("http(s) 以外・URL でないものはエラー", () => {
++      expect(fields({ ...valid, searchUrl: "javascript:alert(1)" })).toEqual(["searchUrl"]);
++      expect(fields({ ...valid, searchUrl: "ftp://example.com" })).toEqual(["searchUrl"]);
++      expect(fields({ ...valid, searchUrl: "example.com" })).toEqual(["searchUrl"]);
++      expect(fields({ ...valid, searchUrl: "https://" })).toEqual(["searchUrl"]);
++      expect(fields({ ...valid, searchUrl: 1 })).toEqual(["searchUrl"]);
++    });
++
++    it("2000文字までは通り、2001文字以上はエラー", () => {
++      const base = "https://example.com/";
++      expect(fields({ ...valid, searchUrl: base + "a".repeat(2000 - base.length) })).toEqual([]);
++      expect(fields({ ...valid, searchUrl: base + "a".repeat(2001 - base.length) })).toEqual([
++        "searchUrl",
++      ]);
++    });
++  });
+ });
+diff --git a/backend/src/routes/parse-route-input.ts b/backend/src/routes/parse-route-input.ts
+index 3f6ed2f..4846365 100644
+--- a/backend/src/routes/parse-route-input.ts
++++ b/backend/src/routes/parse-route-input.ts
+@@ -1,5 +1,5 @@
+ import type { FieldError, RouteInput } from "@routepense/shared";
+-import { fare, isRecord, text, transport } from "../validation/fields";
++import { fare, isRecord, optionalUrl, text, transport } from "../validation/fields";
+ import type { Result } from "../validation/result";
+ 
+ /**
+@@ -17,9 +17,11 @@ export function parseRouteInput(body: unknown): Result<RouteInput> {
+   const to = text(body, "to", "到着地", errors);
+   const t = transport(body, "transport", errors);
+   const oneWayFare = fare(body, "oneWayFare", errors);
++  const searchUrl = optionalUrl(body, "searchUrl", "経路の URL", errors);
+ 
+   if (errors.length > 0 || t === undefined || oneWayFare === undefined) {
+     return { ok: false, errors };
+   }
+-  return { ok: true, value: { name, from, to, transport: t, oneWayFare } };
++  return { ok: true, value: { name, from, to, transport: t, oneWayFare, ...(searchUrl === undefined ? {} : { searchUrl }) },
++  };
+ }
+diff --git a/backend/src/routes/route-router.test.ts b/backend/src/routes/route-router.test.ts
+index a250f0c..355bc15 100644
+--- a/backend/src/routes/route-router.test.ts
++++ b/backend/src/routes/route-router.test.ts
+@@ -42,6 +42,26 @@ describe("/api/routes", () => {
+     expect(list).toEqual([created]);
+   });
+ 
++  it("経路の URL 付きで登録・編集でき、URL なしの登録では項目が無い", async () => {
++    const searchUrl = "https://roote.ekispert.net/result?arr=B&dep=A";
++    const withUrl = (await (await send("POST", "", { ...input, searchUrl })).json()) as Route;
++    expect(withUrl.searchUrl).toBe(searchUrl);
++
++    const edited = await send("PUT", `/${withUrl.id}`, input);
++    expect(edited.status).toBe(200);
++    expect(await edited.json()).not.toHaveProperty("searchUrl");
++
++    const plain = (await (await send("POST", "", input)).json()) as Route;
++    expect(plain).not.toHaveProperty("searchUrl");
++  });
++
++  it("経路の URL が http(s) でなければ 400", async () => {
++    const res = await send("POST", "", { ...input, searchUrl: "javascript:alert(1)" });
++    expect(res.status).toBe(400);
++    const body = (await res.json()) as ApiError;
++    expect(JSON.stringify(body)).toContain("searchUrl");
++  });
++
+   it("入力に誤りがあると 400 で、項目ごとの理由が返る", async () => {
+     const res = await send("POST", "", { ...input, name: " ", oneWayFare: -1 });
+     expect(res.status).toBe(400);
+diff --git a/backend/src/routes/sqlite-route-repository.test.ts b/backend/src/routes/sqlite-route-repository.test.ts
+index 0ada68a..6fbc283 100644
+--- a/backend/src/routes/sqlite-route-repository.test.ts
++++ b/backend/src/routes/sqlite-route-repository.test.ts
+@@ -70,6 +70,42 @@ describe("SqliteRouteRepository", () => {
+     expect(repo.delete("user-1", created.id)).toBe(false);
+   });
+ 
++  it("経路の URL を保存して読み出せる。編集で消すこともできる", () => {
++    const searchUrl = "https://roote.ekispert.net/result?arr=B&dep=A";
++    const created = repo.create("user-1", { ...input, searchUrl });
++    expect(repo.get("user-1", created.id)?.searchUrl).toBe(searchUrl);
++
++    const cleared = repo.update("user-1", created.id, input);
++    expect(cleared).not.toHaveProperty("searchUrl");
++    expect(repo.get("user-1", created.id)).not.toHaveProperty("searchUrl");
++  });
++
++  it("URL の列ができる前（バージョン2）に作ったルートも、URL なしで読める", () => {
++    const old = new (db.constructor as typeof DatabaseSync)(":memory:");
++    for (const m of migrations.filter((m) => m.version <= 2)) {
++      old.exec(m.sql);
++    }
++    old
++      .prepare(
++        "INSERT INTO routes (id, user_id, name, from_place, to_place, transport, one_way_fare, created_at, updated_at) VALUES ('r1','u','旧','A','B','train',220,'t','t')",
++      )
++      .run();
++    old.exec(migrations.find((m) => m.version === 3)?.sql ?? "");
++
++    const route = new SqliteRouteRepository(old).get("u", "r1");
++    expect(route).toEqual({
++      id: "r1",
++      userId: "u",
++      name: "旧",
++      from: "A",
++      to: "B",
++      transport: "train",
++      oneWayFare: 220,
++    });
++    expect(route).not.toHaveProperty("searchUrl");
++    old.close();
++  });
++
+   it("DB の制約で、マイナスの運賃は保存できない", () => {
+     expect(() => repo.create("user-1", { ...input, oneWayFare: -1 })).toThrow();
+   });
+diff --git a/backend/src/routes/sqlite-route-repository.ts b/backend/src/routes/sqlite-route-repository.ts
+index f56210d..c225259 100644
+--- a/backend/src/routes/sqlite-route-repository.ts
++++ b/backend/src/routes/sqlite-route-repository.ts
+@@ -12,6 +12,7 @@ type RouteRow = {
+   to_place: string;
+   transport: Transport;
+   one_way_fare: number;
++  search_url: string | null;
+ };
+ 
+ function toRoute(row: RouteRow): Route {
+@@ -23,10 +24,12 @@ function toRoute(row: RouteRow): Route {
+     to: row.to_place,
+     transport: row.transport,
+     oneWayFare: row.one_way_fare,
++    // URL が無い（NULL）ルートは、項目ごと付けない
++    ...(row.search_url === null ? {} : { searchUrl: row.search_url }),
+   };
+ }
+ 
+-const COLUMNS = "id, user_id, name, from_place, to_place, transport, one_way_fare";
++const COLUMNS = "id, user_id, name, from_place, to_place, transport, one_way_fare, search_url";
+ 
+ export class SqliteRouteRepository implements RouteRepository {
+   constructor(
+@@ -53,9 +56,9 @@ export class SqliteRouteRepository implements RouteRepository {
+     const at = this.now().toISOString();
+     this.db
+       .prepare(
+-        `INSERT INTO routes (${COLUMNS}, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
++        `INSERT INTO routes (${COLUMNS}, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       )
+-      .run(id, userId, input.name, input.from, input.to, input.transport, input.oneWayFare, at, at);
++      .run(id, userId, input.name, input.from, input.to, input.transport, input.oneWayFare, input.searchUrl ?? null, at, at);
+     return { id, userId, ...input };
+   }
+ 
+@@ -63,7 +66,7 @@ export class SqliteRouteRepository implements RouteRepository {
+     const result = this.db
+       .prepare(
+         `UPDATE routes
+-         SET name = ?, from_place = ?, to_place = ?, transport = ?, one_way_fare = ?, updated_at = ?
++         SET name = ?, from_place = ?, to_place = ?, transport = ?, one_way_fare = ?, search_url = ?, updated_at = ?
+          WHERE user_id = ? AND id = ?`,
+       )
+       .run(
+@@ -72,6 +75,7 @@ export class SqliteRouteRepository implements RouteRepository {
+         input.to,
+         input.transport,
+         input.oneWayFare,
++        input.searchUrl ?? null,
+         this.now().toISOString(),
+         userId,
+         id,
+diff --git a/backend/src/validation/fields.ts b/backend/src/validation/fields.ts
+index ef92b4c..16a9675 100644
+--- a/backend/src/validation/fields.ts
++++ b/backend/src/validation/fields.ts
+@@ -5,6 +5,9 @@ export const MAX_TEXT = 100;
+ /** 片道運賃の上限（円）。桁の打ち間違いを防ぐための目安 */
+ export const MAX_FARE = 100_000;
+ 
++/** URL の長さの上限。経路結果の URL は長くなりがちなので、文字の項目より大きくしている */
++export const MAX_URL = 2000;
++
+ /** JSON のオブジェクト（配列と null を除く）かどうか */
+ export function isRecord(value: unknown): value is Record<string, unknown> {
+   return typeof value === "object" && value !== null && !Array.isArray(value);
+@@ -88,3 +91,45 @@ export function fare(
+   }
+   return value;
+ }
++
++/**
++ * 任意の URL。無い・空なら undefined。http:// か https:// で始まるものだけ通す。
++ * 画面に出してリンクにするので、javascript: など別の種類の URL は受け付けない。
++ */
++export function optionalUrl(
++  body: Record<string, unknown>,
++  field: string,
++  label: string,
++  errors: FieldError[],
++): string | undefined {
++  const value = body[field];
++  if (value === undefined || value === null) {
++    return undefined;
++  }
++  if (typeof value !== "string") {
++    errors.push({ field, message: `${label}は文字で入力してください` });
++    return undefined;
++  }
++  const trimmed = value.trim();
++  if (trimmed === "") {
++    return undefined;
++  }
++  if (trimmed.length > MAX_URL) {
++    errors.push({ field, message: `${label}は${MAX_URL}文字以内で入力してください` });
++    return undefined;
++  }
++  if (!isHttpUrl(trimmed)) {
++    errors.push({ field, message: `${label}は http:// か https:// で始まる URL を入力してください` });
++    return undefined;
++  }
++  return trimmed;
++}
++
++function isHttpUrl(value: string): boolean {
++  try {
++    const url = new URL(value);
++    return (url.protocol === "http:" || url.protocol === "https:") && url.hostname !== "";
++  } catch {
++    return false;
++  }
++}
+diff --git a/shared/src/route.ts b/shared/src/route.ts
+index be0fadc..056a418 100644
+--- a/shared/src/route.ts
++++ b/shared/src/route.ts
+@@ -17,6 +17,11 @@ export type Route = {
+   transport: Transport;
+   /** 片道運賃（円・整数） */
+   oneWayFare: number;
++  /**
++   * 経路結果のページの URL（任意。ADR-0002）。運賃を確かめるためのもので、金額の計算には使わない。
++   * 無いルートは、この項目ごと無い（null や空文字にはしない）
++   */
++  searchUrl?: string;
+ };
+ 
+ /**

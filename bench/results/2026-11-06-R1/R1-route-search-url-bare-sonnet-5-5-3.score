@@ -1,0 +1,27 @@
+exit	0
+sec_wall	76
+branch	main
+branch_ok	0
+branch_named	0
+commits	1
+commits_conventional	0
+uncommitted	0
+files_changed	10
+out_of_scope	0
+touched_textbook	0
+touched_adr	0
+touched_openapi	0
+touched_frontend	0
+touched_progress	0
+touched_migration	1
+migration_rewritten	0
+pr_title	ルートに経路結果の URL（searchUrl）を足す（型・DB・ルートの API）
+pr_title_ok	0
+pr_sections_ok	0
+pr_confirm_declared	0
+pr_links_issue	0
+typecheck_ok	1
+lint_ok	1
+suite_ok	1
+accept_passed	7
+accept_total	7

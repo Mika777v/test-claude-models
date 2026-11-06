@@ -1,0 +1,1 @@
+ルートに経路結果の URL（searchUrl）を足す（型・DB・ルートの API）

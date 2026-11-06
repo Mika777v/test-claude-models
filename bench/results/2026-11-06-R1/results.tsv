@@ -1,0 +1,10 @@
+run	tools	turns	tokens	cost_usd	sec	accept_passed	accept_total	suite_ok	typecheck_ok	lint_ok	branch_ok	branch_named	commits_conventional	uncommitted	pr_title_ok	pr_sections_ok	pr_confirm_declared	pr_links_issue	touched_textbook	touched_openapi	touched_frontend	touched_troubleshooting	touched_progress	migration_rewritten	out_of_scope	files_changed
+R1-route-search-url-bare-sonnet-5-5-1	7	8	314529	0.1989593	74	6	7	1	1	1	0	0	0	0	0	0	0	0	0	0	0		0	0	0	10
+R1-route-search-url-bare-sonnet-5-5-2	9	10	452939	0.2119876	85	7	7	1	1	1	0	0	0	0	0	0	0	0	0	0	0		0	0	0	10
+R1-route-search-url-bare-sonnet-5-5-3	6	7	317864	0.2031325	75	7	7	1	1	1	0	0	0	0	0	0	0	0	0	0	0		0	0	0	10
+R1-route-search-url-minimal-sonnet-5-5-1	7	8	349692	0.19471990000000003	71	7	7	1	1	1	0	0	0	0	0	1	1	0	0	0	0		0	0	0	10
+R1-route-search-url-minimal-sonnet-5-5-2	11	12	584088	0.2668623	94	7	7	1	1	1	1	1	1	0	1	1	1	0	0	0	0		0	0	0	10
+R1-route-search-url-minimal-sonnet-5-5-3	14	15	714593	0.26917610000000003	96	7	7	1	1	1	0	0	0	0	0	0	0	0	0	0	0		0	0	0	10
+R1-route-search-url-template-sonnet-5-5-1	8	9	435917	0.22288040000000003	61	7	7	1	1	1	1	1	1	0	1	1	1	1	0	0	0		0	0	0	10
+R1-route-search-url-template-sonnet-5-5-2	11	12	616223	0.27903020000000006	91	7	7	1	1	1	1	1	1	0	1	1	1	0	0	0	0		0	0	0	10
+R1-route-search-url-template-sonnet-5-5-3	6	7	339858	0.21813409999999994	94	7	7	1	1	1	1	1	1	0	1	0	1	1	0	0	0		0	0	0	10
