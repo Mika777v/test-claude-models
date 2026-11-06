@@ -4,10 +4,10 @@
 # 機能が正しいか（見せていない受け入れテスト）・ルールを守ったか・使った量を比べる。
 #
 # 使い方:
-#   bash tools/agent-bench/run.sh prepare      # 対象のリポジトリを取得し、依存を入れる（1回だけ）
-#   bash tools/agent-bench/run.sh dry          # AI を動かさずに確かめる（受け入れテストが落ちること・正解の実装で通ること）
-#   bash tools/agent-bench/run.sh run          # AI を動かして測る（料金・利用枠を使う）
-#   bash tools/agent-bench/run.sh report       # 結果の表
+#   bash bench/run.sh prepare      # 対象のリポジトリを取得し、依存を入れる（1回だけ）
+#   bash bench/run.sh dry          # AI を動かさずに確かめる（受け入れテストが落ちること・正解の実装で通ること）
+#   bash bench/run.sh run          # AI を動かして測る（料金・利用枠を使う）
+#   bash bench/run.sh report       # 結果の表
 #
 # 主な設定（環境変数）:
 #   BENCH_OUT         作業と結果の置き場所（既定: ${TMPDIR:-/tmp}/agent-bench）

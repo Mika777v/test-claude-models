@@ -1,9 +1,9 @@
 # agent-bench — テンプレートの効果を測るベンチマーク
 
-> **目的**: このテンプレートの運用ルール（CLAUDE.md / AGENTS.md）が、AI の作業を本当に良くしているかを測る。同じ Task を「テンプレートあり」と「最小限の CLAUDE.md」で AI（Claude Code）に実装させ、**機能が正しいか**・**ルールを守ったか**・**使った量**を比べる。
+> **目的**: [ai-driven-dev-template](https://github.com/Mika777v/ai-driven-dev-template) の運用ルール（CLAUDE.md / AGENTS.md）が、AI の作業を本当に良くしているかを測る。同じ Task を「テンプレートあり」と「最小限の CLAUDE.md」で AI（Claude Code）に実装させ、**機能が正しいか**・**ルールを守ったか**・**使った量**を比べる。
 > **いつ読むか**: テンプレートのルールを足す・削るときに、効果を確かめたいとき。
 
-errnav だけの効果は [`tools/errnav/bench/`](../errnav/bench/README.md) で測る。こちらは運用のルール全体が対象。
+errnav だけの効果は [`tools/errnav/bench/`](https://github.com/Mika777v/ai-driven-dev-template/tree/main/tools/errnav/bench)（テンプレートのリポジトリ）で測る。こちらは運用のルール全体が対象。
 
 ## しくみ
 
@@ -60,24 +60,24 @@ Task のディレクトリ:
 必要なもの: git・jq・Node.js 22・Claude Code の CLI（ログイン済み）。
 
 ```bash
-bash tools/agent-bench/run.sh prepare
+bash bench/run.sh prepare
 ```
 
 ```bash
-bash tools/agent-bench/run.sh dry
+bash bench/run.sh dry
 ```
 
 ```bash
-BENCH_MODEL=<使うモデル> bash tools/agent-bench/run.sh run
+BENCH_MODEL=<使うモデル> bash bench/run.sh run
 ```
 
 ```bash
-bash tools/agent-bench/run.sh report
+bash bench/run.sh report
 ```
 
 - `dry`: **AI を動かさずに**、何もしない作業場所では受け入れテストが落ち、正解の実装（`reference.patch`）では全部通ることを確かめる
 - `run`: 2条件 × 2回 = 4回。1回は 10〜20 分・20〜40 ターンくらいの見込み。**利用枠を多く使う**（errnav のベンチの1回の 10 倍くらい）。1回の上限は `BENCH_MAX_BUDGET` ドル（既定 5）・`BENCH_TIMEOUT` 秒（既定 1800）。済んだ回は飛ばすので、分けて動かせる
-- 1回だけ試す: `BENCH_RUNS=1 BENCH_CONDITIONS=template bash tools/agent-bench/run.sh run`
+- 1回だけ試す: `BENCH_RUNS=1 BENCH_CONDITIONS=template bash bench/run.sh run`
 
 結果は `BENCH_OUT`（既定 `${TMPDIR:-/tmp}/agent-bench`）の `runs/` に残る。
 
@@ -92,4 +92,4 @@ bash tools/agent-bench/run.sh report
 
 1. `tasks/<ID>/` に `task.md`・`acceptance/`・`config.sh` を置く（T1 をまねる）
 2. 正解の実装を手で作り、受け入れテストが全部通ることを確かめて `reference.patch` にする（受け入れテストの誤りを見つけるため）
-3. `BENCH_TASK=<ID> bash tools/agent-bench/run.sh dry`
+3. `BENCH_TASK=<ID> bash bench/run.sh dry`
