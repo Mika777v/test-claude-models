@@ -43,7 +43,8 @@ for t in "${tasks[@]}"; do
   fi
 
   echo "==> dry: $t（土台 $base）"
-  log=$(BENCH_OUT="$out" BENCH_BASE="$base" BENCH_TASK="$t" bash bench/run.sh dry 2>&1)
+  accept_log="$OUT_ROOT/$t.accept.log"; mkdir -p "$OUT_ROOT"; : > "$accept_log"
+  log=$(BENCH_ACCEPT_LOG="$accept_log" BENCH_OUT="$out" BENCH_BASE="$base" BENCH_TASK="$t" bash bench/run.sh dry 2>&1)
   status=$?
   printf '%s\n' "$log" | sed 's/^/  /'
   if [ "$status" -ne 0 ]; then
@@ -70,6 +71,8 @@ for t in "${tasks[@]}"; do
   printf '%s\n' "$verdict" | sed 's/^/  判定: /'
   if printf '%s\n' "$verdict" | grep -q '^NG'; then
     echo "::error::$t の dry の結果が期待と違います"; fail=1
+    echo "  --- 受け入れテストの生の出力（最後の 40 行。$accept_log）"
+    tail -n 40 "$accept_log" | sed 's/^/  | /'
   fi
 done
 
