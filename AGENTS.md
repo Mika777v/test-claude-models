@@ -24,7 +24,7 @@
 
 - **何**: AI エージェントの運用ルール（ai-driven-dev-template）やモデルの使い分けの効果を、同じ Task を AI（Claude Code）に実装させて測るベンチマーク（`bench/`）と、その結果
 - **誰のため**: オーナー（ai-driven-dev-template の作者）。どのルールを入れるか・どのモデルをどこに使うかを、データで決めるため
-- **いまの段階**: 立ち上げ（ai-driven-dev-template の `bench/agent-bench` から道具と結果を移している）
+- **いまの段階**: 立ち上げが終わり、次の測定を選ぶところ（`docs/PROGRESS.md`）
 
 ## 2. やりとり
 

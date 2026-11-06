@@ -10,7 +10,7 @@
 
 | # | ステップ | 状態 | 主な PR |
 |---|---|---|---|
-| 0 | 検証用のリポジトリの立ち上げ（道具の移行・テンプレート・評価の方針・CI） | 進行中 | [#1](https://github.com/Mika777v/test-claude-models/pull/1)・[#2](https://github.com/Mika777v/test-claude-models/pull/2) |
+| 0 | 検証用のリポジトリの立ち上げ（道具の移行・テンプレート・評価の方針・CI） | 終わった | [#1](https://github.com/Mika777v/test-claude-models/pull/1)・[#2](https://github.com/Mika777v/test-claude-models/pull/2)・[#3](https://github.com/Mika777v/test-claude-models/pull/3)・[#4](https://github.com/Mika777v/test-claude-models/pull/4) |
 
 ## これまでの測定（テンプレートのリポジトリで行ったもの）
 
@@ -26,15 +26,15 @@
 
 ## 次にやること
 
-1. CI（構文と dry。AI は動かさない）を入れる（立ち上げの最後の作業）
-2. 次の測定を選ぶ（どれもオーナーが「動かして」と言うまで `run` しない。`EVALUATION.md` §6 の流れで、まず Issue に「決めたいこと」を書く）
+1. 次の測定を選ぶ（どれもオーナーが「動かして」と言うまで `run` しない。`EVALUATION.md` §6 の流れで、まず Issue に「決めたいこと」を書く）
    - T2 の発展: 続きの AI もルールありの条件（from-template をルールありで続ける）と比べる
    - T4 を Opus でも動かす
    - 担当ごとにモデルを変える運用の残り: 確認が必要な PR を Opus がレビューする段階
    - 「オーナーの答え」のファイルを渡して、要件の段階でオーナーが答える場面を測る
    - T5: 「確認が必要な項目」に「業務の決まりを足す・変える」を入れたら、要件の段階が無くても確認に回るか
    - テンプレートに足した ADR のルールで、AI が実際に ADR を書くか（T3 を土台 `d4d15fd` で動かす。T4 では Haiku・template が書いた）
-3. Task の作り方（`EVALUATION.md` §7）をオーナーと決め、ADR にする
+2. Task の作り方（`EVALUATION.md` §7）をオーナーと決め、ADR にする
+3. `ci-ok` を必須チェックにするかを決める（リポジトリの設定の Rulesets。オーナーの作業）
 
 ## 開いている PR・待っていること
 
@@ -50,6 +50,8 @@
 - なし（AI を動かすベンチはオーナーが言うまで実行しないことは AGENTS.md §2 に書いた）
 
 ## 既知の問題・警告
+
+- `bench/score.sh` は、色を出す環境（GitHub Actions・`FORCE_COLOR`）で受け入れテストの通過を 0 件と数えていた。[#4](https://github.com/Mika777v/test-claude-models/pull/4) で直した（保存してある 42 回は 0 件の回が無く、影響なし）
 
 採点（`bench/score.sh`）の直しどころ。直すまでは、自動の値を読んで確かめる。
 
