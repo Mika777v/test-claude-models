@@ -92,4 +92,5 @@ bash bench/run.sh report
 
 1. `tasks/<ID>/` に `task.md`・`acceptance/`・`config.sh` を置く（T1 をまねる）
 2. 正解の実装を手で作り、受け入れテストが全部通ることを確かめて `reference.patch` にする（受け入れテストの誤りを見つけるため）
-3. `BENCH_TASK=<ID> bash bench/run.sh dry`
+3. [`scripts/dry-all.sh`](../scripts/dry-all.sh) の `base_of` に、その Task の土台（routepense のコミット）を足す
+4. `bash scripts/dry-all.sh <ID>`（受け入れテストが、何もしないと落ち・正解の実装で全部通るかを判定する。CI の bench-dry でも動く）
