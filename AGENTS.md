@@ -14,7 +14,7 @@
 | 知りたいこと | 読むもの |
 |---|---|
 | 検証したいこと・仮説 | [`README.md`](README.md) |
-| 測り方の方針（決めたいこと・指標・回数） | `docs/EVALUATION.md` |
+| 測り方の方針（決めたいこと・指標・回数） | [`docs/EVALUATION.md`](docs/EVALUATION.md) |
 | ベンチの道具の使い方・Task・採点の項目 | [`bench/README.md`](bench/README.md) |
 | これまでの測定の結果 | `bench/results/<日付>-<Task>/README.md` |
 | いまの進み具合・次にやること | [`docs/PROGRESS.md`](docs/PROGRESS.md) |
