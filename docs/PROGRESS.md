@@ -35,11 +35,10 @@
    - 「オーナーの答え」のファイルを渡して、要件の段階でオーナーが答える場面を測る
    - テンプレートに足した ADR のルールで、AI が実際に ADR を書くか（T3 を土台 `d4d15fd` で動かす。T4 では Haiku・template が書いた）
 3. Task の作り方（`EVALUATION.md` §7）をオーナーと決め、ADR にする
-4. `ci-ok` を必須チェックにするかを決める（オーナーの作業）。テンプレートの `scripts/github/setup-repo.sh` をこのリポジトリ向けに直して取り込んだ（[#8](https://github.com/Mika777v/test-claude-models/pull/8)）。マージ後に `REPO=Mika777v/test-claude-models bash scripts/github/setup-repo.sh` を管理者の `gh` で実行すれば、自動マージ・`main` の保護・必須チェック `ci-ok` がそろう
 
 ## 開いている PR・待っていること
 
-- [#8](https://github.com/Mika777v/test-claude-models/pull/8)（T5-biz の結果と、リポジトリの設定のスクリプト）: オーナーの確認待ち。結果どおりなら、テンプレートの「確認が必要な項目」に「業務の決まりを足す・変える」を入れるか（テンプレートへの反映）もオーナーが決める
+- オーナーの判断待ち: T5-biz の結果（[#8](https://github.com/Mika777v/test-claude-models/pull/8)・マージ済み）どおり、テンプレートの「確認が必要な項目」に「業務の決まりを足す・変える」を入れるか。次の測定を A（過去の PR をやり直す）と B の小さい版のどちらから始めるか
 - テンプレート側の [Mika777v/ai-driven-dev-template#10](https://github.com/Mika777v/ai-driven-dev-template/pull/10)（T4 の3回分の直しと T2 の節）: オーナーの確認待ち
 
 ## 作業場所の作り方
@@ -51,6 +50,10 @@
 ## 会話で決めたこと（ほかの文書に無いもの）
 
 - なし（AI を動かすベンチはオーナーが言うまで実行しないことは AGENTS.md §2 に書いた）
+
+## リポジトリの設定
+
+- 2026-11-06 にオーナーが Codespaces で `REPO=Mika777v/test-claude-models bash scripts/github/setup-repo.sh --codespace` を実行し、最後まで通った（[#9](https://github.com/Mika777v/test-claude-models/pull/9)）。`main` は PR 必須・必須チェック `ci-ok`・force push と削除の禁止・マージは squash と merge・自動マージあり。設定を変えるときはスクリプトを直して実行し直す
 
 ## 既知の問題・警告
 
