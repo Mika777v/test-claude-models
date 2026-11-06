@@ -116,7 +116,9 @@ done
 res=""
 # BENCH_ACCEPT_LOG を決めると、受け入れテストの生の出力をそのファイルに足す（判定が外れたときの調べ用。採点は変えない）
 if [ ${#placed[@]} -gt 0 ]; then
-  raw=$(npx vitest run "${placed[@]}" 2>&1)
+  # 色の制御文字（ANSI）を外してから数える。色を出す環境（GitHub Actions・FORCE_COLOR など）では
+  # 集計の行が「\e[2m      Tests」で始まり、外さないと 0 件と数えてしまう
+  raw=$(npx vitest run "${placed[@]}" 2>&1 | sed $'s/\x1b\\[[0-9;]*m//g')
   [ -n "${BENCH_ACCEPT_LOG:-}" ] && printf '%s\n' "$raw" >> "$BENCH_ACCEPT_LOG"
   res=$(printf '%s\n' "$raw" | grep -E '^ +Tests ' | tail -n 1)
 fi
