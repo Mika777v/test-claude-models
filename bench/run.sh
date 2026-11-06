@@ -20,6 +20,7 @@
 #                       bare      minimal に加えて、運用のルールの文書（DEV_RULES・GITHUB_WORKFLOW・PROGRESS・
 #                                 PR / Issue のテンプレート・pr-title.yml）も消す。「ルールが無い」状態
 #                       none      bare に加えて docs/adr/README.md（ADR を書くときのルール）も消す
+#                       template-biz  template の「確認が必要な項目」に「業務の決まりを足す・変える」を足す（T5 の続き）
 #   BENCH_RUNS        1つの条件で何回動かすか（既定: 2）
 #   BENCH_MODEL       使うモデル（比べるときは固定する）
 #   BENCH_SPEC_MODEL  決めると、実装の前に、このモデルが要件を詰める段階を入れる（コードは変えず SPEC.md を書く）。
@@ -118,6 +119,17 @@ treat() {
       # ADR そのもの（0001〜）はプロジェクトの中身として残す
       treat bare "$ws"
       rm -f "$ws/docs/adr/README.md"
+      ;;
+    template-biz)
+      # template の「確認が必要な項目」に「業務の決まりを足す・変える」を足す（T5 の結果の示唆）。
+      # 一覧が書いてある3か所（CLAUDE.md・docs/DEV_RULES.md・PR のテンプレート）をそろえて直す
+      local biz='業務の決まり（何ができて何ができないか）を足す・変える'
+      sed -i "s|要件定義・運用ルール|要件定義・${biz}こと（要件定義を直さなくても）・運用ルール|" "$ws/CLAUDE.md"
+      sed -i "s|^   - 要件定義の変更（\`docs/requirements.md\`）\$|&\n   - ${biz}。要件定義のファイルを直したかどうかではなく、決まりを決めたかどうかで見る|" "$ws/docs/DEV_RULES.md"
+      sed -i "s|/ 要件定義 /|/ 要件定義 / 業務の決まりを足す・変える /|" "$ws/.github/pull_request_template.md"
+      local f; for f in CLAUDE.md docs/DEV_RULES.md .github/pull_request_template.md; do
+        grep -q '業務の決まり' "$ws/$f" || die "template-biz: $f を直せなかった（土台が違う？）"
+      done
       ;;
     *) die "知らない条件: $cond" ;;
   esac

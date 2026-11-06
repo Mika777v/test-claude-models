@@ -13,6 +13,7 @@ errnav だけの効果は [`tools/errnav/bench/`](https://github.com/Mika777v/ai
 | 条件 `template` | CLAUDE.md をそのまま使う |
 | 条件 `minimal` | CLAUDE.md を、説明・技術スタック・コマンドだけにする（[fixtures/routepense-minimal-CLAUDE.md](fixtures/routepense-minimal-CLAUDE.md)）。ほかのファイル（`docs/DEV_RULES.md`・PR テンプレートなど）は同じだが、CLAUDE.md から案内されない |
 | 条件 `bare` | `minimal` に加えて、運用のルールの文書（`docs/DEV_RULES.md`・`docs/GITHUB_WORKFLOW.md`・`docs/PROGRESS.md`・PR / Issue のテンプレート・`pr-title.yml`）も消す。「ルールが無い」状態。要件定義・教科書・手順書・API の仕様書・ADR・CI は残す |
+| 条件 `template-biz` | `template` の「確認が必要な項目」（`CLAUDE.md`・`docs/DEV_RULES.md`・PR のテンプレートの3か所）に「業務の決まり（何ができて何ができないか）を足す・変える」を足す。T5 で、要件定義を直さずに決まりを足すと確認の網をくぐった（0/3）ため。土台 `d4d15fd` 用 |
 | 指示 | どの条件でも同じ。「Task を実装して PR を出す直前まで。PR のタイトルと本文は `PR_TITLE.txt`・`PR_BODY.md` に。コミットまで。質問はできないので自分で決めて PR の本文に書く」+ Task の本文。**運用のルールのことは書かない** |
 | ツール | Bash・Read・Grep・Glob・Edit・Write・Skill。サブエージェント・Web は使わせない。ユーザーの設定と MCP は読まない |
 | 作業場所 | 毎回まっさら。git の履歴は1コミットだけ。GitHub にはつながらない |
