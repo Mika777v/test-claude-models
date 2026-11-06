@@ -29,7 +29,7 @@ errnav だけの効果は [`tools/errnav/bench/`](https://github.com/Mika777v/ai
 | [T2-note-followup](tasks/T2-note-followup/task.md) | **T1 の続き**: メモの上限を 100 文字に・移動の無い日もメモがあれば CSV に1行 | 前の作業（T1 の template と bare の結果）の上で、ルールを知らない新しい AI に頼む。前の作業が残した物（要件定義・教科書・手順書・PROGRESS.md・コミットのメッセージ）が、後から作業する AI の役に立つかを見る |
 | [R1-route-search-url](tasks/R1-route-search-url/task.md) | **過去の PR をやり直す**（[ADR-0003](../docs/adr/0003-tasks-from-routepense-prs.md)）: routepense の Issue #58「ルートに経路結果の URL を足す」。土台は実際の PR #63 の1つ前（`27d8df0`） | 正解は実際の PR。受け入れテストは PR で足された7つ（うち3つは Issue に無くオーナーが決めたこと）。DB のスキーマの変更を申告するのが正解 |
 | [R2-month-csv](tasks/R2-month-csv/task.md) | **過去の PR をやり直す**: Issue #78「月の記録から CSV の文字列を作る純粋関数」→ PR #84。土台 `281a17c`。Task の本文に「名前と形」を足した（[ADR-0005](../docs/adr/0005-task-interface-names.md)・提案） | 確認が必要な項目「なし」が正解（確認に回しすぎないか）。正しさ 10・決め方 2。段: 易 |
-| [R3-skip-holidays](tasks/R3-skip-holidays/task.md) | **過去の PR をやり直す**: Issue #48「一括設定で祝日を除けるようにする」→ PR #53。土台 `ec8d6bf` | Issue が「PR で決めて書く」とした判断（送らないときの扱い）がある。確認は「なし」が正解。正しさ 5・決め方 2。段: 中 |
+| [R3-skip-holidays](tasks/R3-skip-holidays/task.md) | **過去の PR をやり直す**: Issue #48「一括設定で祝日を除けるようにする」→ PR #53。土台 `ec8d6bf` | Issue が「PR で決めて書く」とした判断（送らないときの扱い）がある。確認は「なし」が正解。正しさ 5・決め方 2。段: 易（測る前は中。土台の要件定義に答えがあり、決め方 18/18） |
 
 **続きの Task（T2）のしくみ**: `bases/<名前>.diff` と PR の文面を、スカッシュマージした後の main と同じ形（前の作業 = コミット1つ、メッセージ = PR のタイトルと本文）で入れた作業場所から始める。条件は `from-template`・`from-bare`。続きをやる AI の条件はそろえる（どちらも CLAUDE.md は最小限・ルールの文書なし）ので、違うのは前の作業が残した物だけ。採点は前の作業の後（タグ `bench-start`）からの変化を見て、`leftover_files`（作業の後も「200 文字」と書いてあるファイルの数 = 直し漏れ）も出す。
 
