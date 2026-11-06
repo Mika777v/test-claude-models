@@ -23,10 +23,11 @@
 | T2（続きの Task） | 終わった | [results/2026-11-06-T2](../bench/results/2026-11-06-T2/README.md) | 続きの AI は前の作業が残した物を真似る。正しさ 18/18、費用は約1.06倍 |
 | T4 を要件の段階（Opus・Sonnet）→ Sonnet で実装 | 終わった | [results/2026-11-06-T4-spec](../bench/results/2026-11-06-T4-spec/README.md) | 揺れは消え、境目がオーナーへの質問（8〜12 個）になる。費用は Sonnet だけの約3.2倍（要件も Sonnet なら Opus の約8割） |
 | T5（②業務の決まりだけがあいまい） | 終わった | [results/2026-11-06-T5](../bench/results/2026-11-06-T5/README.md) | 12/12 が②に気づき落とし穴も避けた。要件の段階が無いとルールがあっても確認に回さない（0/3） |
+| T5 + 確認の項目に「業務の決まり」（`template-biz`。[#6](https://github.com/Mika777v/test-claude-models/issues/6)） | 終わった | [results/2026-11-06-T5-biz](../bench/results/2026-11-06-T5-biz/README.md) | 確認に回すのが 0/3 → 3/3、要件定義に書くのも 0/3 → 2/3。費用は $0.22 → $0.26。作る物（編集は対象外）は変わらず、問いとして渡した |
 
 ## 次にやること
 
-1. **選んだ測定: T5 + 「業務の決まりを足す・変える」**（[#6](https://github.com/Mika777v/test-claude-models/issues/6)）。条件 `template-biz` を足した。決めたいこと・判断の基準・コマンドは Issue に。**オーナーの「動かして」待ち**（3回で約 $0.7）
+1. **routepense の今を正解に、仮説を確かめる測定の作り方を決める**（オーナーの方針。B「要件定義から一から作る（0→1・仮説1）」が理想、A「過去の機能の PR をやり直す（1→10・仮説2・3）」が現実的）。おすすめは A を主にし、B は1つの Epic（ルートの管理。雛形の PR #3 の後から）で `template` を1回だけ動かし、費用と時間を見てから上限を決める。決めたら ADR（`EVALUATION.md` §7 の Task の作り方もこれで決まる）
 2. 残りの候補（どれもオーナーが「動かして」と言うまで `run` しない。`EVALUATION.md` §6 の流れで、まず Issue に「決めたいこと」を書く）
    - T2 の発展: 続きの AI もルールありの条件（from-template をルールありで続ける）と比べる
    - T4 を Opus でも動かす
@@ -38,11 +39,13 @@
 
 ## 開いている PR・待っていること
 
+- [#7](https://github.com/Mika777v/test-claude-models/pull/7)（条件 `template-biz` と結果）: オーナーの確認待ち。結果どおりなら、テンプレートの「確認が必要な項目」に「業務の決まりを足す・変える」を入れるか（テンプレートへの反映）もオーナーが決める
 - テンプレート側の [Mika777v/ai-driven-dev-template#10](https://github.com/Mika777v/ai-driven-dev-template/pull/10)（T4 の3回分の直しと T2 の節）: オーナーの確認待ち
 
 ## 作業場所の作り方
 
 - ベンチの作業と結果の置き場所は `BENCH_OUT`（既定 `${TMPDIR:-/tmp}/agent-bench`）。マシンが替わると消えるので、新しいマシンでは `bash bench/run.sh prepare` からやり直す
+- クラウドのセッションの中から `run` すると、ベンチの AI の PR の本文に、そのセッションの URL が入る（[results/2026-11-06-T5-biz](../bench/results/2026-11-06-T5-biz/README.md)）
 - 土台を変えるときは `BENCH_BASE`（T0〜T3・T2 は `41ac314`、T4・T5 は `d4d15fd`）と `BENCH_OUT` を分ける（[ADR-0002](adr/0002-bench-base-and-conditions.md)）
 
 ## 会話で決めたこと（ほかの文書に無いもの）
