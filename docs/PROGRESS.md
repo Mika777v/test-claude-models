@@ -35,7 +35,7 @@
    - 「オーナーの答え」のファイルを渡して、要件の段階でオーナーが答える場面を測る
    - テンプレートに足した ADR のルールで、AI が実際に ADR を書くか（T3 を土台 `d4d15fd` で動かす。T4 では Haiku・template が書いた）
 3. Task の作り方（`EVALUATION.md` §7）をオーナーと決め、ADR にする
-4. `ci-ok` を必須チェックにするかを決める（リポジトリの設定の Rulesets。オーナーの作業）
+4. `ci-ok` を必須チェックにするかを決める（オーナーの作業）。テンプレートの `scripts/github/setup-repo.sh` をこのリポジトリ向けに直して取り込んだ（[#7](https://github.com/Mika777v/test-claude-models/pull/7)）。マージ後に `REPO=Mika777v/test-claude-models bash scripts/github/setup-repo.sh` を管理者の `gh` で実行すれば、自動マージ・`main` の保護・必須チェック `ci-ok` がそろう
 
 ## 開いている PR・待っていること
 
