@@ -53,8 +53,9 @@
 |---|---|
 | 対象のリポジトリの取得・依存の導入（1回だけ） | `bash bench/run.sh prepare` |
 | AI を動かさずに確かめる（受け入れテストが落ちること・正解の実装で通ること） | `bash bench/run.sh dry` |
-| PR 前の確認（構文と dry） | `bash scripts/check.sh` |
-| 1つの Task だけ dry | `BENCH_TASK=<ID> bash bench/run.sh dry` |
+| PR 前の確認（構文・shellcheck・Task のそろい・パッチの形。数秒） | `bash scripts/check.sh` |
+| 加えて、すべての Task の dry（ベンチの道具・Task を変えたとき。初回は数分） | `CHECK_DRY=1 bash scripts/check.sh` |
+| 1つの Task だけ dry（土台は自動で選ぶ） | `bash scripts/dry-all.sh <ID>` |
 | 結果の表 | `bash bench/run.sh report` |
 | **AI を動かして測る（オーナーの指示があるときだけ）** | `BENCH_MODEL=<モデル> bash bench/run.sh run` |
 
@@ -76,7 +77,8 @@ docs/
   EVALUATION.md    測り方の方針
   PROGRESS.md      進み具合・次にやること
   adr/             設計判断の記録
-scripts/check.sh   PR 前の確認（CI と同じ）
+scripts/check.sh   PR 前の確認（CI の ci.yml と同じ）
+scripts/dry-all.sh すべての Task の dry と判定（CI の bench-dry.yml と同じ）
 ```
 
 ## 6. 気をつけること（過去につまずいた点）

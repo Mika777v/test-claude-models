@@ -1,0 +1,43 @@
+name: ci
+
+# すべての PR と main への push で動く、速い確認（構文・shellcheck・Task のそろい・パッチの形・差し替え漏れ）。
+# AI は動かさない。dry（受け入れテストが効くか）は bench-dry.yml。
+# 必須チェックにするのは ci-ok だけにする。確認を増やすときは checks に足すか、新しいジョブを ci-ok の needs に加える
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+
+      # shellcheck は ubuntu-latest に入っている
+      - name: Check
+        run: bash scripts/check.sh
+
+  # 必須チェック。スキップされたジョブは成功扱い、失敗・キャンセルがあれば失敗にする
+  ci-ok:
+    if: always()
+    needs: [checks]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check results
+        env:
+          RESULTS: ${{ toJSON(needs.*.result) }}
+        run: |
+          echo "results: $RESULTS"
+          if echo "$RESULTS" | grep -qE '"(failure|cancelled)"'; then
+            echo "::error::いずれかのチェックが失敗またはキャンセルされました"
+            exit 1
+          fi

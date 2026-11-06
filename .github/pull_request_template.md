@@ -20,7 +20,7 @@ Closes #
 - 確かめられなかった:
 
 ## チェックリスト
-- [ ] `bash scripts/check.sh`（構文と dry の確認。AI は動かさない）が手元で通る
+- [ ] `bash scripts/check.sh` が手元で通る（ベンチの道具・Task を変えたときは `CHECK_DRY=1` を付けて dry も。AI は動かさない）
 - [ ] AI を動かすベンチ（`bench/run.sh run`）を、オーナーの指示なしに実行していない
 - [ ] 受け入れテスト・`reference.patch`・採点を更新した（Task や採点を変えた場合）
 - [ ] `AGENTS.md` §1 の目的・§3-7 のやらないことと食い違っていない

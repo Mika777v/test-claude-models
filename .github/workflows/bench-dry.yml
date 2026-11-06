@@ -1,0 +1,41 @@
+name: bench-dry
+
+# すべての Task で bench/run.sh dry を流し、受け入れテストと正解の実装が効くかを確かめる（scripts/dry-all.sh）。
+# AI は動かさない（bench/run.sh run は呼ばない。claude の CLI も入れない）。
+# routepense の clone と npm ci があるので数分かかる。そのため、毎回ではなく次のときだけ動かす:
+#   - 手動（Actions の画面の「Run workflow」）
+#   - ベンチの道具・Task を変えた PR
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'bench/run.sh'
+      - 'bench/score.sh'
+      - 'bench/tasks/**'
+      - 'bench/fixtures/**'
+      - 'scripts/dry-all.sh'
+      - '.github/workflows/bench-dry.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: bench-dry-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  dry:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      # jq は ubuntu-latest に入っている
+      - name: Dry (all tasks)
+        env:
+          DRY_OUT: ${{ runner.temp }}/agent-bench-dry
+        run: bash scripts/dry-all.sh
