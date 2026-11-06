@@ -27,29 +27,30 @@
 
 ## 次にやること
 
-1. **routepense の今を正解に、仮説を確かめる測定の作り方を決める**（オーナーの方針。B「要件定義から一から作る（0→1・仮説1）」が理想、A「過去の機能の PR をやり直す（1→10・仮説2・3）」が現実的）。おすすめは A を主にし、B は1つの Epic（ルートの管理。雛形の PR #3 の後から）で `template` を1回だけ動かし、費用と時間を見てから上限を決める。決めたら ADR（`EVALUATION.md` §7 の Task の作り方もこれで決まる）
+1. **測定 A1**（[#11](https://github.com/Mika777v/test-claude-models/issues/11)）: routepense の過去の PR #63（経路の URL）をやり直す Task `R1-route-search-url` を作り、dry まで済んだ（何もしないと 2/7・正解で 7/7）。条件 template / minimal / bare × 3回・約 $3。**オーナーの「動かして」待ち**。Task の作り方は [ADR-0003](adr/0003-tasks-from-routepense-prs.md)（提案）。結果が読めたら R2（「確認が必要な項目: なし」が正解の Task。例: #84 CSV の純粋関数）・R3（判断が要る Task。例: #53 祝日を除く）を作る
+   - B（要件定義から一から作る）は、1つの Epic（ルートの管理）で `template` を1回だけ動かして費用を見てから決める
 2. 残りの候補（どれもオーナーが「動かして」と言うまで `run` しない。`EVALUATION.md` §6 の流れで、まず Issue に「決めたいこと」を書く）
    - T2 の発展: 続きの AI もルールありの条件（from-template をルールありで続ける）と比べる
    - T4 を Opus でも動かす
    - 担当ごとにモデルを変える運用の残り: 確認が必要な PR を Opus がレビューする段階
    - 「オーナーの答え」のファイルを渡して、要件の段階でオーナーが答える場面を測る
    - テンプレートに足した ADR のルールで、AI が実際に ADR を書くか（T3 を土台 `d4d15fd` で動かす。T4 では Haiku・template が書いた）
-3. Task の作り方（`EVALUATION.md` §7）をオーナーと決め、ADR にする
+3. ADR-0003（Task の作り方）をオーナーに確かめて「決定」にする
 
 ## 開いている PR・待っていること
 
-- オーナーの判断待ち: T5-biz の結果（[#8](https://github.com/Mika777v/test-claude-models/pull/8)・マージ済み）どおり、テンプレートの「確認が必要な項目」に「業務の決まりを足す・変える」を入れるか。次の測定を A（過去の PR をやり直す）と B の小さい版のどちらから始めるか
+- テンプレート側の [Mika777v/ai-driven-dev-template#11](https://github.com/Mika777v/ai-driven-dev-template/pull/11)（確認が必要な項目に「業務の決まりを足す・変える」。オーナーが反映を決めた）: オーナーの確認待ち
 - テンプレート側の [Mika777v/ai-driven-dev-template#10](https://github.com/Mika777v/ai-driven-dev-template/pull/10)（T4 の3回分の直しと T2 の節）: オーナーの確認待ち
 
 ## 作業場所の作り方
 
 - ベンチの作業と結果の置き場所は `BENCH_OUT`（既定 `${TMPDIR:-/tmp}/agent-bench`）。マシンが替わると消えるので、新しいマシンでは `bash bench/run.sh prepare` からやり直す
 - クラウドのセッションの中から `run` すると、ベンチの AI の PR の本文に、そのセッションの URL が入る（[results/2026-11-06-T5-biz](../bench/results/2026-11-06-T5-biz/README.md)）
-- 土台を変えるときは `BENCH_BASE`（T0〜T3・T2 は `41ac314`、T4・T5 は `d4d15fd`）と `BENCH_OUT` を分ける（[ADR-0002](adr/0002-bench-base-and-conditions.md)）
+- 土台を変えるときは `BENCH_BASE`（T0〜T3・T2 は `41ac314`、T4・T5 は `d4d15fd`、R* は config.sh の `TASK_BASE`）と `BENCH_OUT` を分ける（[ADR-0002](adr/0002-bench-base-and-conditions.md)）
 
 ## 会話で決めたこと（ほかの文書に無いもの）
 
-- なし（AI を動かすベンチはオーナーが言うまで実行しないことは AGENTS.md §2 に書いた）
+- routepense の Issue は、このセッションの権限では読めない（取り込みを止められた）。`gh api -X GET search/issues -f q='repo:Mika777v/routepense is:issue'` の検索で本文を読める
 
 ## リポジトリの設定
 

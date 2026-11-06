@@ -27,6 +27,7 @@ errnav だけの効果は [`tools/errnav/bench/`](https://github.com/Mika777v/ai
 
 | [T3-taxi](tasks/T3-taxi/task.md) | **影響度: 高。** 交通手段に「タクシー」を足す | 3つのテーブルの CHECK 制約が変わり、SQLite ではテーブルを作り直すマイグレーションが要る。**外部キーを止めずに作り直すと、ON DELETE CASCADE で追加の移動が全部消える**（既存のテストは全部通るので、受け入れテストでしか気づけない）。前の版の DB のデータが残るか・既存のマイグレーションを書き換えないか・申告するかを見る |
 | [T2-note-followup](tasks/T2-note-followup/task.md) | **T1 の続き**: メモの上限を 100 文字に・移動の無い日もメモがあれば CSV に1行 | 前の作業（T1 の template と bare の結果）の上で、ルールを知らない新しい AI に頼む。前の作業が残した物（要件定義・教科書・手順書・PROGRESS.md・コミットのメッセージ）が、後から作業する AI の役に立つかを見る |
+| [R1-route-search-url](tasks/R1-route-search-url/task.md) | **過去の PR をやり直す**（[ADR-0003](../docs/adr/0003-tasks-from-routepense-prs.md)）: routepense の Issue #58「ルートに経路結果の URL を足す」。土台は実際の PR #63 の1つ前（`27d8df0`） | 正解は実際の PR。受け入れテストは PR で足された7つ（うち3つは Issue に無くオーナーが決めたこと）。DB のスキーマの変更を申告するのが正解 |
 
 **続きの Task（T2）のしくみ**: `bases/<名前>.diff` と PR の文面を、スカッシュマージした後の main と同じ形（前の作業 = コミット1つ、メッセージ = PR のタイトルと本文）で入れた作業場所から始める。条件は `from-template`・`from-bare`。続きをやる AI の条件はそろえる（どちらも CLAUDE.md は最小限・ルールの文書なし）ので、違うのは前の作業が残した物だけ。採点は前の作業の後（タグ `bench-start`）からの変化を見て、`leftover_files`（作業の後も「200 文字」と書いてあるファイルの数 = 直し漏れ）も出す。
 

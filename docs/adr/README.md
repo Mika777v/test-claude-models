@@ -12,3 +12,4 @@ AI は「なぜこうなっているか」をコードから読み取れない�
 | [0000](0000-template.md) | （テンプレート） | — |
 | [0001](0001-move-agent-bench-to-dedicated-repo.md) | agent-bench をテンプレートから分け、このリポジトリの bench/ に履歴ごと置く | 決定 |
 | [0002](0002-bench-base-and-conditions.md) | 測定の土台を routepense の固定コミットにし、条件は「ルールの文書を消す量」で分ける | 決定 |
+| [0003](0003-tasks-from-routepense-prs.md) | Task を routepense の過去の PR から作り、実際にマージした結果を正解にする | 提案 |
