@@ -27,7 +27,7 @@
 
 ## 次にやること
 
-1. **測定 A1**（[#11](https://github.com/Mika777v/test-claude-models/issues/11)）: routepense の過去の PR #63（経路の URL）をやり直す Task `R1-route-search-url` を作り、dry まで済んだ（何もしないと 2/7・正解で 7/7）。条件 template / minimal / bare × 3回・約 $3。**オーナーの「動かして」待ち**。Task の作り方は [ADR-0003](adr/0003-tasks-from-routepense-prs.md)（提案）。結果が読めたら R2（「確認が必要な項目: なし」が正解の Task。例: #84 CSV の純粋関数）・R3（判断が要る Task。例: #53 祝日を除く）を作る
+1. **測定 A1**（[#11](https://github.com/Mika777v/test-claude-models/issues/11)）: routepense の過去の PR #63（経路の URL）をやり直す Task `R1-route-search-url` を作り、dry まで済んだ（何もしないと 2/7・正解で 7/7）。条件 template / minimal / bare × 3回・約 $3。**オーナーの「動かして」待ち**。Task の作り方は [ADR-0003](adr/0003-tasks-from-routepense-prs.md)（決定。オーナーが #10 をマージ）。結果が読めたら R2（「確認が必要な項目: なし」が正解の Task。例: #84 CSV の純粋関数）・R3（判断が要る Task。例: #53 祝日を除く）を作る
    - B（要件定義から一から作る）は、1つの Epic（ルートの管理）で `template` を1回だけ動かして費用を見てから決める
 2. 残りの候補（どれもオーナーが「動かして」と言うまで `run` しない。`EVALUATION.md` §6 の流れで、まず Issue に「決めたいこと」を書く）
    - T2 の発展: 続きの AI もルールありの条件（from-template をルールありで続ける）と比べる
@@ -35,12 +35,10 @@
    - 担当ごとにモデルを変える運用の残り: 確認が必要な PR を Opus がレビューする段階
    - 「オーナーの答え」のファイルを渡して、要件の段階でオーナーが答える場面を測る
    - テンプレートに足した ADR のルールで、AI が実際に ADR を書くか（T3 を土台 `d4d15fd` で動かす。T4 では Haiku・template が書いた）
-3. ADR-0003（Task の作り方）をオーナーに確かめて「決定」にする
 
 ## 開いている PR・待っていること
 
-- テンプレート側の [Mika777v/ai-driven-dev-template#11](https://github.com/Mika777v/ai-driven-dev-template/pull/11)（確認が必要な項目に「業務の決まりを足す・変える」。オーナーが反映を決めた）: オーナーの確認待ち
-- テンプレート側の [Mika777v/ai-driven-dev-template#10](https://github.com/Mika777v/ai-driven-dev-template/pull/10)（T4 の3回分の直しと T2 の節）: オーナーの確認待ち
+- なし（テンプレート側の [#10](https://github.com/Mika777v/ai-driven-dev-template/pull/10)・[#11](https://github.com/Mika777v/ai-driven-dev-template/pull/11)（業務の決まりを確認の項目に）もマージ済み）
 
 ## 作業場所の作り方
 
