@@ -1,6 +1,6 @@
 # ADR-0003: Task を routepense の過去の PR から作り、実際にマージした結果を正解にする
 
-- 状態: 提案（オーナーの確認待ち）
+- 状態: 決定（2026-11-06 にオーナーが [#10](https://github.com/Mika777v/test-claude-models/pull/10) をマージ）
 - 日付: 2026-11-06
 - 関係する Issue・PR: 測定 A の Issue（この ADR の PR に書く）・`docs/EVALUATION.md` §7
 
