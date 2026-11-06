@@ -57,7 +57,7 @@
 | 加えて、すべての Task の dry（ベンチの道具・Task を変えたとき。初回は数分） | `CHECK_DRY=1 bash scripts/check.sh` |
 | 1つの Task だけ dry（土台は自動で選ぶ） | `bash scripts/dry-all.sh <ID>` |
 | 結果の表 | `bash bench/run.sh report` |
-| リポジトリの設定をそろえる（マージの方法・自動マージ・`main` の保護と必須チェック `ci-ok`。オーナーが、管理者の `gh` で実行） | `REPO=Mika777v/test-claude-models bash scripts/github/setup-repo.sh` |
+| リポジトリの設定をそろえる（マージの方法・自動マージ・`main` の保護と必須チェック `ci-ok`。オーナーが、管理者の `gh` で実行。Codespaces では `--codespace` を付ける） | `REPO=Mika777v/test-claude-models bash scripts/github/setup-repo.sh` |
 | **AI を動かして測る（オーナーの指示があるときだけ）** | `BENCH_MODEL=<モデル> bash bench/run.sh run` |
 
 - 確認のコマンドは、まとめて1回で実行する

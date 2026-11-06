@@ -12,11 +12,36 @@
 #
 # 使い方:
 #   REPO=<owner>/<repo> bash scripts/github/setup-repo.sh
+#   REPO=<owner>/<repo> bash scripts/github/setup-repo.sh --codespace   # Codespaces で動かす場合
 #   REPO=<owner>/<repo> APPROVALS=1 bash scripts/github/setup-repo.sh   # チームで使う場合
+#
+# --codespace: Codespaces が自動で入れる GITHUB_TOKEN は権限が狭く、gh はこれを優先して使うので、
+#   リポジトリの設定・ルールセットの変更が権限不足で失敗する。このスクリプトの中だけ GITHUB_TOKEN を外し、
+#   gh にログインしていなければ gh auth login を始める（対話。管理者のアカウントで）。
+#   Codespaces の中（環境変数 CODESPACES=true）で付け忘れたときは、止めて付けるよう案内する
 set -euo pipefail
 
 : "${REPO:?REPO=<owner>/<repo> を指定してください}"
 APPROVALS="${APPROVALS:-0}"
+
+CODESPACE=0
+for arg in "$@"; do
+  case "$arg" in
+    --codespace) CODESPACE=1 ;;
+    *) echo "知らない引数: $arg（使えるのは --codespace）" >&2; exit 2 ;;
+  esac
+done
+
+if [ "$CODESPACE" = 1 ]; then
+  echo "==> codespace: GITHUB_TOKEN を外して、gh のログインを確かめる"
+  unset GITHUB_TOKEN GH_TOKEN
+  if ! gh auth status >/dev/null 2>&1; then
+    gh auth login
+  fi
+elif [ "${CODESPACES:-}" = "true" ] && [ -n "${GITHUB_TOKEN:-}" ]; then
+  echo "Codespaces の中です。自動で入る GITHUB_TOKEN では権限が足りないので、--codespace を付けて実行してください" >&2
+  exit 1
+fi
 
 # ---------------------------------------------------------------
 # 1. 基本設定
