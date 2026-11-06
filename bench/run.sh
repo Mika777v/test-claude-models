@@ -293,7 +293,7 @@ usage_of() {
 
 cmd_report() {
   ls "$OUT"/runs/*.score >/dev/null 2>&1 || die "結果がありません（先に run）"
-  local keys="accept_passed accept_total suite_ok typecheck_ok lint_ok branch_ok branch_named commits_conventional uncommitted pr_title_ok pr_sections_ok pr_confirm_declared pr_links_issue touched_textbook touched_openapi touched_frontend touched_troubleshooting touched_progress migration_rewritten out_of_scope files_changed"
+  local keys="accept_passed accept_total decision_passed decision_total suite_ok typecheck_ok lint_ok branch_ok branch_named commits_conventional uncommitted pr_title_ok pr_sections_ok pr_confirm_declared pr_links_issue touched_textbook touched_openapi touched_frontend touched_troubleshooting touched_progress migration_rewritten out_of_scope files_changed"
   local rows="$OUT/results.tsv" f tag k
   { printf 'run\ttools\tturns\ttokens\tcost_usd\tsec'; for k in $keys; do printf '\t%s' "$k"; done; printf '\n'; } > "$rows"
   for f in "$OUT"/runs/*.score; do

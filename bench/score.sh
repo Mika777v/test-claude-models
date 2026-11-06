@@ -106,25 +106,40 @@ out lint_ok "$(yes npm run lint)"
 out suite_ok "$(yes npx vitest run)"
 
 # ---- 受け入れテスト ------------------------------------------------------------------
-placed=()
-for kv in $ACCEPTANCE; do
-  dest="${kv%%=*}"; src="${kv#*=}"
-  mkdir -p "$(dirname "$dest")"
-  cp "$TASK/acceptance/$src" "$dest" && placed[${#placed[@]}]="$dest"
-done
-# 1つも置けなかったときに、全部のテストを流して数えないようにする
-res=""
-# BENCH_ACCEPT_LOG を決めると、受け入れテストの生の出力をそのファイルに足す（判定が外れたときの調べ用。採点は変えない）
-if [ ${#placed[@]} -gt 0 ]; then
-  # 色の制御文字（ANSI）を外してから数える。色を出す環境（GitHub Actions・FORCE_COLOR など）では
-  # 集計の行が「\e[2m      Tests」で始まり、外さないと 0 件と数えてしまう
-  raw=$(npx vitest run "${placed[@]}" 2>&1 | sed $'s/\x1b\\[[0-9;]*m//g')
-  [ -n "${BENCH_ACCEPT_LOG:-}" ] && printf '%s\n' "$raw" >> "$BENCH_ACCEPT_LOG"
-  res=$(printf '%s\n' "$raw" | grep -E '^ +Tests ' | tail -n 1)
+# 1組のテスト（「置く場所=acceptance/ のファイル名」を空白で区切ったもの）を置いて流し、「通った数 全部の数」を出す。
+# 置いたテストは流した後に消す（作業場所を元の状態に戻す）
+run_set() {
+  local kv dest src res raw passed total=0
+  local placed=()
+  for kv in $1; do
+    dest="${kv%%=*}"; src="${kv#*=}"
+    mkdir -p "$(dirname "$dest")"
+    cp "$TASK/acceptance/$src" "$dest" && placed[${#placed[@]}]="$dest"
+    # 全部の数はファイルの it( から数える（読み込みで落ちて 0 件になったときも、分母がぶれないように）
+    total=$((total + $(grep -cE '^\s*it\(' "$TASK/acceptance/$src")))
+  done
+  res=""
+  # 1つも置けなかったときに、全部のテストを流して数えないようにする
+  if [ ${#placed[@]} -gt 0 ]; then
+    # 色の制御文字（ANSI）を外してから数える。色を出す環境（GitHub Actions・FORCE_COLOR など）では
+    # 集計の行が「\e[2m      Tests」で始まり、外さないと 0 件と数えてしまう
+    raw=$(npx vitest run "${placed[@]}" 2>&1 | sed $'s/\x1b\\[[0-9;]*m//g')
+    # BENCH_ACCEPT_LOG を決めると、生の出力をそのファイルに足す（判定が外れたときの調べ用。採点は変えない）
+    [ -n "${BENCH_ACCEPT_LOG:-}" ] && printf '%s\n' "$raw" >> "$BENCH_ACCEPT_LOG"
+    res=$(printf '%s\n' "$raw" | grep -E '^ +Tests ' | tail -n 1)
+  fi
+  rm -f "${placed[@]}"
+  passed=$(printf '%s' "$res" | grep -oE '[0-9]+ passed' | grep -oE '[0-9]+')
+  echo "${passed:-0} $total"
+}
+
+# 正しさ（Task に書いてあること）の受け入れテスト
+read -r passed total <<< "$(run_set "$ACCEPTANCE")"
+out accept_passed "$passed"
+out accept_total "$total"
+# 決め方（Task に無く、実際の PR でオーナーが決めたこと）のテスト。config.sh の DECISION（ADR-0004）
+if [ -n "${DECISION:-}" ]; then
+  read -r passed total <<< "$(run_set "$DECISION")"
+  out decision_passed "$passed"
+  out decision_total "$total"
 fi
-rm -f "${placed[@]}"
-# 全部の数は受け入れテストのファイルの it( から数える（読み込みで落ちて 0 件になったときも、分母がぶれないように）
-total=$(cat "$TASK"/acceptance/*.ts | grep -cE '^\s*it\(')
-passed=$(printf '%s' "$res" | grep -oE '[0-9]+ passed' | grep -oE '[0-9]+')
-out accept_passed "${passed:-0}"
-out accept_total "${total:-0}"
