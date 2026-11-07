@@ -57,6 +57,7 @@ Task のディレクトリ:
 | `touched_*` | 教科書・`openapi.yaml`・画面・手順書・PROGRESS・マイグレーションを変えた |
 | `migration_rewritten` | 既にあるマイグレーションの SQL を書き換えた（してはいけない） |
 | `out_of_scope` | 変えてよい場所の外のファイルを変えた数 |
+| `diff_lines`・`ref_lines`・`diff_ratio` | 作業の差分の行数（足した + 消した）・正解の実装（`reference.patch`）の行数・その比。1.5 を超えたら「やりすぎ」の印（ADR-0004 の参考値。Y には入れない） |
 
 **読み方**: ルールの項目の多くは `template` に有利（CLAUDE.md に書いてあることを守るか、を見ている）。主な指標は **受け入れテスト** と **使った量**（トークン・ターン・時間）。ルールの項目は「書いておけば守るか」「書いていないと、どれくらい自然に守るか」の確認として読む。
 
@@ -91,7 +92,28 @@ bash bench/run.sh report
 | `<Task>-<条件>-<回>.jsonl` | AI のやりとりの全部 |
 | `.score` | 採点の結果（項目と値） |
 | `.diff`・`.pr_title.txt`・`.pr_body.md` | AI が作った変更と PR の文面（人が読んで確かめる用） |
-| `results.tsv` | 全部の回の表 |
+| `results.tsv` | 全部の回の表。`tokens` は合計、`tokens_in`・`tokens_out`・`tokens_cache_write`・`tokens_cache_read` はその内訳（入力・出力・キャッシュの作成・読み出し） |
+
+### 指標の計算（[summarize.mjs](summarize.mjs)。[ADR-0004](../docs/adr/0004-evaluation-score.md)）
+
+`results.tsv` から、条件ごとに関門（成功の数）・Q（決め方・申告・形・文書）・成功1回あたりのドルと入力トークン・Y を出す。AI は動かさない。
+
+1. 申告の点の表の雛形を作る（申告は自動の値があてにならないので、人が PR の本文を読んで点を書く）
+
+```bash
+node bench/summarize.mjs <結果>/results.tsv --init-declare <結果>/declare.tsv
+```
+
+2. `declare.tsv` の `point` の列に 1 / 0.5 / 0 を書く（付け方は ADR-0004 の「申告」）
+3. 計算する（`--docs` は、その Task で「形・文書」に入れる文書の列。`--json` で JSON にも書き出す）
+
+```bash
+node bench/summarize.mjs <結果>/results.tsv --declare <結果>/declare.tsv --docs touched_textbook --json <結果>/summary.json
+```
+
+- 重みは `--weights 決め方,申告,形`（既定 `0.4,0.4,0.2`）。変えたら結果の README に書く
+- 決め方のテストが無い Task（`decision_*` が無い）・申告の点の無い回がある条件は、その軸を外して残りの重みで割り直し、Q に `*` を付ける
+- トークンの内訳の無い古い表は、入力トークンの代わりに合計（出力も含む）を使う
 
 ## Task を足す
 

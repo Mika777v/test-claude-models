@@ -58,6 +58,7 @@
 | 1つの Task だけ dry（土台は自動で選ぶ） | `bash scripts/dry-all.sh <ID>` |
 | 結果の表 | `bash bench/run.sh report` |
 | リポジトリの設定をそろえる（マージの方法・自動マージ・`main` の保護と必須チェック `ci-ok`。オーナーが、管理者の `gh` で実行。Codespaces では `--codespace` を付ける） | `REPO=Mika777v/test-claude-models bash scripts/github/setup-repo.sh` |
+| 指標（関門・Q・成功1回あたりのコスト・Y）の計算（ADR-0004。申告の点は `declare.tsv` に人が書く） | `node bench/summarize.mjs <結果>/results.tsv --declare <結果>/declare.tsv` |
 | **AI を動かして測る（オーナーの指示があるときだけ）** | `BENCH_MODEL=<モデル> bash bench/run.sh run` |
 
 - 確認のコマンドは、まとめて1回で実行する
@@ -71,6 +72,7 @@ AGENTS.md        このファイル（CLAUDE.md はこれを読み込むだけ�
 bench/           ベンチマークの道具（元は ai-driven-dev-template の tools/agent-bench/）
   run.sh           prepare / dry / run / report
   score.sh         1回の作業場所を採点する
+  summarize.mjs    結果の表から指標（Q・Y）を計算する
   tasks/<ID>/      Task の本文・隠した受け入れテスト・正解の例・採点の設定
   fixtures/        条件ごとに差し替える CLAUDE.md など
   results/         測定ごとの結果と読み比べ（README）

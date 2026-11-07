@@ -27,6 +27,16 @@ else
   echo "  shellcheck が無いため飛ばします（CI では動きます）"
 fi
 
+step "集計の道具（bench/summarize.mjs）"
+if command -v node >/dev/null; then
+  node --check bench/summarize.mjs || ng "構文の誤り: bench/summarize.mjs"
+  # 保存してある結果の表で、最後まで動くかだけを見る（値は見ない）
+  node bench/summarize.mjs bench/results/2026-11-06-R2-R3/results.tsv \
+    --declare bench/results/2026-11-06-R2-R3/declare.tsv --docs touched_textbook >/dev/null || ng "bench/summarize.mjs が動きません"
+else
+  echo "  node が無いため飛ばします（CI では動きます）"
+fi
+
 step "Task のそろい（task.md・config.sh・acceptance/）"
 for d in bench/tasks/*/; do
   t=$(basename "$d")
