@@ -15,3 +15,4 @@ AI は「なぜこうなっているか」をコードから読み取れない�
 | [0003](0003-tasks-from-routepense-prs.md) | Task を routepense の過去の PR から作り、実際にマージした結果を正解にする | 決定 |
 | [0004](0004-evaluation-score.md) | 評価の指標を「正しさの関門 ＋ 品質の点 Q ÷ 成功1回あたりのコスト」にし、Task は難しさの段ごとにまとめる | 決定 |
 | [0005](0005-task-interface-names.md) | 過去の PR をやり直す Task では、テストが使う名前と形を Task の本文に足してよい | 提案 |
+| [0006](0006-declare-point-when-no-section.md) | 確認が要らない Task で「確認が必要な項目」を書かなかった回は、申告を 0.5 点にする | 決定 |
