@@ -45,7 +45,7 @@ Q = 0.4 × 決め方 ＋ 0.4 × 申告 ＋ 0.2 × 形・文書、Y = Q ÷ 成功
 - **どちらの点にするかで、R2 の順位が入れ替わる。** 1 にすると、R2 では bare がいちばん良い（template は Q が高いが、費用が約3割高い）。0.5 にすると、R2・R3 とも template がいちばん良い
 - おすすめは 0.5。「確認が必要な項目: なし」と書いてあるから、オーナーは読まずに自動マージを任せられる。何も書いていない PR は、確認が要るかをオーナーが本文を読んで見分けることになり、手間は減っていない
 
-申告の点は `declare.tsv`（PR の本文を読んで付けた。節が無い回は、おすすめの 0.5。オーナーが決めるまでの仮の値）。下の表を出すコマンド:
+申告の点は `declare.tsv`（PR の本文を読んで付けた。節が無い回は 0.5。2026-11-07 にオーナーが決めた → [ADR-0006](../../../docs/adr/0006-declare-point-when-no-section.md)）。下の表を出すコマンド:
 
 ```bash
 node bench/summarize.mjs bench/results/2026-11-06-R2-R3/results.tsv --declare bench/results/2026-11-06-R2-R3/declare.tsv --docs touched_textbook
@@ -62,7 +62,7 @@ node bench/summarize.mjs bench/results/2026-11-06-R2-R3/results.tsv --declare be
 
 ## 決めること（オーナー）
 
-- ADR-0004 の申告の点で、確認が要らない Task で何も書かなかった回をどう数えるか（おすすめ: 0.5）。ADR は書き換えないので、決めたら新しい ADR にする
+- ~~ADR-0004 の申告の点で、確認が要らない Task で何も書かなかった回をどう数えるか~~ → 0.5 に決めた（[ADR-0006](../../../docs/adr/0006-declare-point-when-no-section.md)）。この決まりでは、R2・R3 とも template の Y がいちばん上
 - これまでの R1〜R3 は、どれも土台の文書に答えがあり、易しかった。ルールの差（申告・判断）を見るには、土台の文書に答えが無く、Issue に無い判断が多い Task が要る（routepense の過去の PR では見つけにくい。T4・T5 のような作った Task のほうが向いている）
 
 ## 気をつけること
