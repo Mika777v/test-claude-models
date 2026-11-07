@@ -48,6 +48,14 @@ out uncommitted "$dirty"
 changed=$( { git diff --name-only "$root" HEAD; git status --porcelain | cut -c4-; } | sort -u | grep -v '^$')
 out files_changed "$(printf '%s\n' "$changed" | grep -c .)"
 out out_of_scope "$(printf '%s\n' "$changed" | grep -v '^$' | grep -cvE "$SCOPE_RE")"
+# 差分の大きさ（足した行 + 消した行）と、正解の実装（reference.patch）との比（ADR-0004 の参考値。1.5 を超えたら「やりすぎ」の印）
+diff_lines=$(git diff --numstat "$root" | awk '$1 != "-" { n += $1 + $2 } END { print n + 0 }')
+out diff_lines "$diff_lines"
+if [ -f "$TASK/reference.patch" ]; then
+  ref_lines=$(git apply --numstat "$TASK/reference.patch" 2>/dev/null | awk '$1 != "-" { n += $1 + $2 } END { print n + 0 }')
+  out ref_lines "$ref_lines"
+  out diff_ratio "$(awk -v a="$diff_lines" -v b="$ref_lines" 'BEGIN { if (b > 0) printf "%.2f", a / b }')"
+fi
 for kv in $DOC_CHECKS; do
   name="${kv%%=*}"; prefix="${kv#*=}"
   out "touched_$name" "$(printf '%s\n' "$changed" | grep -q "^$prefix" && echo 1 || echo 0)"

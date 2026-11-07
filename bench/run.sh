@@ -288,17 +288,19 @@ usage_of() {
     | (map(select(.type == "result")) | last // {}) as $r
     | [ $tools, ($r.num_turns // ""),
         (($r.usage.input_tokens // 0) + ($r.usage.output_tokens // 0) + ($r.usage.cache_creation_input_tokens // 0) + ($r.usage.cache_read_input_tokens // 0)),
-        ($r.total_cost_usd // ""), ((($r.duration_ms // 0) / 1000) | floor) ] | @tsv' "$1"
+        ($r.total_cost_usd // ""), ((($r.duration_ms // 0) / 1000) | floor),
+        ($r.usage.input_tokens // ""), ($r.usage.output_tokens // ""),
+        ($r.usage.cache_creation_input_tokens // ""), ($r.usage.cache_read_input_tokens // "") ] | @tsv' "$1"
 }
 
 cmd_report() {
   ls "$OUT"/runs/*.score >/dev/null 2>&1 || die "結果がありません（先に run）"
-  local keys="accept_passed accept_total decision_passed decision_total suite_ok typecheck_ok lint_ok branch_ok branch_named commits_conventional uncommitted pr_title_ok pr_sections_ok pr_confirm_declared pr_links_issue touched_textbook touched_openapi touched_frontend touched_troubleshooting touched_progress migration_rewritten out_of_scope files_changed"
+  local keys="accept_passed accept_total decision_passed decision_total suite_ok typecheck_ok lint_ok branch_ok branch_named commits_conventional uncommitted pr_title_ok pr_sections_ok pr_confirm_declared pr_links_issue touched_textbook touched_openapi touched_frontend touched_troubleshooting touched_progress migration_rewritten out_of_scope files_changed diff_lines ref_lines diff_ratio"
   local rows="$OUT/results.tsv" f tag k
-  { printf 'run\ttools\tturns\ttokens\tcost_usd\tsec'; for k in $keys; do printf '\t%s' "$k"; done; printf '\n'; } > "$rows"
+  { printf 'run\ttools\tturns\ttokens\tcost_usd\tsec\ttokens_in\ttokens_out\ttokens_cache_write\ttokens_cache_read'; for k in $keys; do printf '\t%s' "$k"; done; printf '\n'; } > "$rows"
   for f in "$OUT"/runs/*.score; do
     tag=$(basename "$f" .score)
-    { printf '%s\t%s' "$tag" "$(usage_of "$OUT/runs/$tag.jsonl" 2>/dev/null || printf '\t\t\t\t')"
+    { printf '%s\t%s' "$tag" "$(usage_of "$OUT/runs/$tag.jsonl" 2>/dev/null || printf '\t\t\t\t\t\t\t\t')"
       for k in $keys; do printf '\t%s' "$(awk -F'\t' -v k="$k" '$1 == k { print $2; exit }' "$f")"; done
       printf '\n'; } >> "$rows"
   done

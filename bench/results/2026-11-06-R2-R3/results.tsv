@@ -1,0 +1,19 @@
+run	tools	turns	tokens	cost_usd	sec	accept_passed	accept_total	decision_passed	decision_total	suite_ok	typecheck_ok	lint_ok	branch_ok	branch_named	commits_conventional	uncommitted	pr_title_ok	pr_sections_ok	pr_confirm_declared	pr_links_issue	touched_textbook	touched_openapi	touched_frontend	touched_troubleshooting	touched_progress	migration_rewritten	out_of_scope	files_changed
+R2-month-csv-bare-sonnet-5-5-1	6	7	304017	0.21942980000000004	73	10	10	1	2	1	1	1	0	0	1	0	1	0	0	0	1		0		0	0	0	7
+R2-month-csv-bare-sonnet-5-5-2	7	8	371161	0.2565191	80	10	10	2	2	1	1	1	0	0	1	0	1	0	0	0	1		0		0	0	0	7
+R2-month-csv-bare-sonnet-5-5-3	7	8	366145	0.24471349999999997	85	10	10	2	2	1	1	1	0	0	0	0	0	0	0	0	1		0		0	0	0	7
+R2-month-csv-minimal-sonnet-5-5-1	5	6	273636	0.2349168	74	10	10	1	2	1	1	1	0	0	1	0	1	0	0	0	1		0		0	0	0	7
+R2-month-csv-minimal-sonnet-5-5-2	7	8	386572	0.27779539999999997	95	10	10	2	2	1	1	1	0	0	0	0	0	0	0	0	1		0		0	0	0	7
+R2-month-csv-minimal-sonnet-5-5-3	6	7	314968	0.23428289999999993	79	10	10	2	2	1	1	1	0	0	0	0	0	0	0	0	1		0		0	0	0	7
+R2-month-csv-template-sonnet-5-5-1	6	7	343177	0.3597879	104	10	10	1	2	1	1	1	0	0	1	0	1	0	1	0	1		0		0	0	0	7
+R2-month-csv-template-sonnet-5-5-2	8	9	487903	0.31282450000000006	117	10	10	2	2	1	1	1	1	1	1	0	1	1	1	0	1		0		0	0	0	7
+R2-month-csv-template-sonnet-5-5-3	7	8	408179	0.2793039	94	10	10	2	2	1	1	1	1	1	1	0	1	1	0	0	1		0		0	0	0	7
+R3-skip-holidays-bare-sonnet-5-5-1	8	9	401411	0.2186831	85	5	5	2	2	1	1	1	0	0	0	0	0	0	0	0	1		1		0	0	0	11
+R3-skip-holidays-bare-sonnet-5-5-2	8	9	416080	0.22667679999999998	59	5	5	2	2	1	1	1	0	0	0	0	0	0	0	0	1		1		0	0	0	11
+R3-skip-holidays-bare-sonnet-5-5-3	12	13	598438	0.23197829999999997	86	5	5	2	2	1	1	1	0	0	0	0	0	0	0	0	0		1		0	0	0	9
+R3-skip-holidays-minimal-sonnet-5-5-1	7	8	381823	0.2293838	84	5	5	2	2	1	1	1	0	0	0	0	0	1	0	0	0		1		0	0	0	9
+R3-skip-holidays-minimal-sonnet-5-5-2	9	10	463404	0.2229317	71	5	5	2	2	1	1	1	0	0	0	0	0	0	0	0	0		1		0	0	0	9
+R3-skip-holidays-minimal-sonnet-5-5-3	8	9	417091	0.2329279	68	5	5	2	2	1	1	1	0	0	0	0	0	0	0	0	0		1		0	0	0	9
+R3-skip-holidays-template-sonnet-5-5-1	8	9	432732	0.2355615	91	5	5	2	2	1	1	1	1	1	1	0	1	1	0	0	1		1		0	0	0	10
+R3-skip-holidays-template-sonnet-5-5-2	8	9	446069	0.2507804	82	5	5	2	2	1	1	1	1	1	1	0	1	1	0	0	1		1		0	0	0	10
+R3-skip-holidays-template-sonnet-5-5-3	13	14	742734	0.31353640000000005	92	5	5	2	2	1	1	1	1	1	1	0	1	1	1	0	1		1		0	0	0	10

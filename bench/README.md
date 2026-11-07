@@ -29,7 +29,7 @@ errnav だけの効果は [`tools/errnav/bench/`](https://github.com/Mika777v/ai
 | [T2-note-followup](tasks/T2-note-followup/task.md) | **T1 の続き**: メモの上限を 100 文字に・移動の無い日もメモがあれば CSV に1行 | 前の作業（T1 の template と bare の結果）の上で、ルールを知らない新しい AI に頼む。前の作業が残した物（要件定義・教科書・手順書・PROGRESS.md・コミットのメッセージ）が、後から作業する AI の役に立つかを見る |
 | [R1-route-search-url](tasks/R1-route-search-url/task.md) | **過去の PR をやり直す**（[ADR-0003](../docs/adr/0003-tasks-from-routepense-prs.md)）: routepense の Issue #58「ルートに経路結果の URL を足す」。土台は実際の PR #63 の1つ前（`27d8df0`） | 正解は実際の PR。受け入れテストは PR で足された7つ（うち3つは Issue に無くオーナーが決めたこと）。DB のスキーマの変更を申告するのが正解 |
 | [R2-month-csv](tasks/R2-month-csv/task.md) | **過去の PR をやり直す**: Issue #78「月の記録から CSV の文字列を作る純粋関数」→ PR #84。土台 `281a17c`。Task の本文に「名前と形」を足した（[ADR-0005](../docs/adr/0005-task-interface-names.md)・提案） | 確認が必要な項目「なし」が正解（確認に回しすぎないか）。正しさ 10・決め方 2。段: 易 |
-| [R3-skip-holidays](tasks/R3-skip-holidays/task.md) | **過去の PR をやり直す**: Issue #48「一括設定で祝日を除けるようにする」→ PR #53。土台 `ec8d6bf` | Issue が「PR で決めて書く」とした判断（送らないときの扱い）がある。確認は「なし」が正解。正しさ 5・決め方 2。段: 中 |
+| [R3-skip-holidays](tasks/R3-skip-holidays/task.md) | **過去の PR をやり直す**: Issue #48「一括設定で祝日を除けるようにする」→ PR #53。土台 `ec8d6bf` | Issue が「PR で決めて書く」とした判断（送らないときの扱い）がある。確認は「なし」が正解。正しさ 5・決め方 2。段: 易（測る前は中。土台の要件定義に答えがあり、決め方 18/18） |
 
 **続きの Task（T2）のしくみ**: `bases/<名前>.diff` と PR の文面を、スカッシュマージした後の main と同じ形（前の作業 = コミット1つ、メッセージ = PR のタイトルと本文）で入れた作業場所から始める。条件は `from-template`・`from-bare`。続きをやる AI の条件はそろえる（どちらも CLAUDE.md は最小限・ルールの文書なし）ので、違うのは前の作業が残した物だけ。採点は前の作業の後（タグ `bench-start`）からの変化を見て、`leftover_files`（作業の後も「200 文字」と書いてあるファイルの数 = 直し漏れ）も出す。
 
@@ -57,6 +57,7 @@ Task のディレクトリ:
 | `touched_*` | 教科書・`openapi.yaml`・画面・手順書・PROGRESS・マイグレーションを変えた |
 | `migration_rewritten` | 既にあるマイグレーションの SQL を書き換えた（してはいけない） |
 | `out_of_scope` | 変えてよい場所の外のファイルを変えた数 |
+| `diff_lines`・`ref_lines`・`diff_ratio` | 作業の差分の行数（足した + 消した）・正解の実装（`reference.patch`）の行数・その比。1.5 を超えたら「やりすぎ」の印（ADR-0004 の参考値。Y には入れない） |
 
 **読み方**: ルールの項目の多くは `template` に有利（CLAUDE.md に書いてあることを守るか、を見ている）。主な指標は **受け入れテスト** と **使った量**（トークン・ターン・時間）。ルールの項目は「書いておけば守るか」「書いていないと、どれくらい自然に守るか」の確認として読む。
 
@@ -91,7 +92,28 @@ bash bench/run.sh report
 | `<Task>-<条件>-<回>.jsonl` | AI のやりとりの全部 |
 | `.score` | 採点の結果（項目と値） |
 | `.diff`・`.pr_title.txt`・`.pr_body.md` | AI が作った変更と PR の文面（人が読んで確かめる用） |
-| `results.tsv` | 全部の回の表 |
+| `results.tsv` | 全部の回の表。`tokens` は合計、`tokens_in`・`tokens_out`・`tokens_cache_write`・`tokens_cache_read` はその内訳（入力・出力・キャッシュの作成・読み出し） |
+
+### 指標の計算（[summarize.mjs](summarize.mjs)。[ADR-0004](../docs/adr/0004-evaluation-score.md)）
+
+`results.tsv` から、条件ごとに関門（成功の数）・Q（決め方・申告・形・文書）・成功1回あたりのドルと入力トークン・Y を出す。AI は動かさない。
+
+1. 申告の点の表の雛形を作る（申告は自動の値があてにならないので、人が PR の本文を読んで点を書く）
+
+```bash
+node bench/summarize.mjs <結果>/results.tsv --init-declare <結果>/declare.tsv
+```
+
+2. `declare.tsv` の `point` の列に 1 / 0.5 / 0 を書く（付け方は ADR-0004 の「申告」）
+3. 計算する（`--docs` は、その Task で「形・文書」に入れる文書の列。`--json` で JSON にも書き出す）
+
+```bash
+node bench/summarize.mjs <結果>/results.tsv --declare <結果>/declare.tsv --docs touched_textbook --json <結果>/summary.json
+```
+
+- 重みは `--weights 決め方,申告,形`（既定 `0.4,0.4,0.2`）。変えたら結果の README に書く
+- 決め方のテストが無い Task（`decision_*` が無い）・申告の点の無い回がある条件は、その軸を外して残りの重みで割り直し、Q に `*` を付ける
+- トークンの内訳の無い古い表は、入力トークンの代わりに合計（出力も含む）を使う
 
 ## Task を足す
 

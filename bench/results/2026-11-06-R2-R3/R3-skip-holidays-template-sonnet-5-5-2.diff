@@ -1,0 +1,349 @@
+diff --git a/backend/src/daily-records/bulk-router.test.ts b/backend/src/daily-records/bulk-router.test.ts
+index 1b90cd1..4c4b9f0 100644
+--- a/backend/src/daily-records/bulk-router.test.ts
++++ b/backend/src/daily-records/bulk-router.test.ts
+@@ -66,6 +66,7 @@ describe("/api/daily-records/bulk", () => {
+         endDate: "2026-11-08",
+         weekdays: WEEKDAYS,
+         workStyle: { kind: "commute", routeId: route.id },
++        skipHolidays: false,
+       });
+       expect(res.status).toBe(200);
+       const preview = (await res.json()) as BulkApplyResult;
+@@ -90,7 +91,7 @@ describe("/api/daily-records/bulk", () => {
+     });
+ 
+     it("期間が月をまたぐ・終了日が開始日より前・曜日が無いと 400", async () => {
+-      const base = { weekdays: WEEKDAYS, workStyle: { kind: "remote" } };
++      const base = { weekdays: WEEKDAYS, workStyle: { kind: "remote" }, skipHolidays: true };
+ 
+       const crossMonth = await send("POST", "/daily-records/bulk/preview", {
+         ...base,
+@@ -122,6 +123,7 @@ describe("/api/daily-records/bulk", () => {
+         endDate: "2026-11-30",
+         weekdays: [1, 7],
+         workStyle: { kind: "remote" },
++        skipHolidays: true,
+       });
+       expect(await fieldsOf(badWeekday)).toEqual(["startDate", "weekdays"]);
+ 
+@@ -130,12 +132,54 @@ describe("/api/daily-records/bulk", () => {
+         endDate: "2026-11-30",
+         weekdays: WEEKDAYS,
+         workStyle: { kind: "commute", routeId: "no-such-route" },
++        skipHolidays: true,
+       });
+       expect(noRoute.status).toBe(400);
+       expect(await fieldsOf(noRoute)).toEqual(["workStyle.routeId"]);
+     });
+   });
+ 
++  describe("POST /bulk/preview の skipHolidays", () => {
++    const period = { startDate: "2026-11-01", endDate: "2026-11-08", weekdays: WEEKDAYS };
++
++    async function previewDates(skipHolidays: boolean): Promise<string[]> {
++      const res = await send("POST", "/daily-records/bulk/preview", {
++        ...period,
++        workStyle: { kind: "remote" },
++        skipHolidays,
++      });
++      expect(res.status).toBe(200);
++      return ((await res.json()) as BulkApplyResult).records.map((r) => r.date);
++    }
++
++    it("true: 祝日（11-03 文化の日）を除く", async () => {
++      expect(await previewDates(true)).toEqual(["2026-11-02", "2026-11-04", "2026-11-05", "2026-11-06"]);
++    });
++
++    it("false: 祝日も対象に入れる", async () => {
++      expect(await previewDates(false)).toContain("2026-11-03");
++    });
++
++    it("無い・boolean でないと 400", async () => {
++      const missing = await send("POST", "/daily-records/bulk/preview", {
++        ...period,
++        workStyle: { kind: "remote" },
++      });
++      expect(missing.status).toBe(400);
++      expect(await fieldsOf(missing)).toEqual(["skipHolidays"]);
++
++      for (const skipHolidays of ["true", 1, null]) {
++        const res = await send("POST", "/daily-records/bulk/preview", {
++          ...period,
++          workStyle: { kind: "remote" },
++          skipHolidays,
++        });
++        expect(res.status).toBe(400);
++        expect(await fieldsOf(res)).toEqual(["skipHolidays"]);
++      }
++    });
++  });
++
+   describe("POST /bulk（登録）", () => {
+     it("日ごとの勤務区分をまとめて保存し、既存の日の追加の移動は残す", async () => {
+       await send("PUT", "/daily-records/2026-11-02", { workStyle: { kind: "remote" } });
+diff --git a/backend/src/daily-records/parse-bulk-input.ts b/backend/src/daily-records/parse-bulk-input.ts
+index df4c1d4..1914482 100644
+--- a/backend/src/daily-records/parse-bulk-input.ts
++++ b/backend/src/daily-records/parse-bulk-input.ts
+@@ -26,6 +26,7 @@ function monthOf(date: string): string {
+  * 一括設定の下見の入力（期間・曜日・勤務区分）を確かめる。
+  * - 開始日・終了日が実在する日で、終了日 ≥ 開始日、同じ月の中（要件定義 U8）
+  * - 曜日は 0〜6 の整数で、1つ以上（重なりは1つにまとめる）
++ * - skipHolidays は true / false（送り忘れは 400。既定値は置かない）
+  */
+ export function parseBulkPreviewRequest(body: unknown): Result<BulkPreviewRequest> {
+   if (!isRecord(body)) {
+@@ -54,6 +55,11 @@ export function parseBulkPreviewRequest(body: unknown): Result<BulkPreviewReques
+     errors.push({ field: "weekdays", message: "曜日は 0（日）〜 6（土）の数で指定してください" });
+   }
+ 
++  const { skipHolidays } = body;
++  if (typeof skipHolidays !== "boolean") {
++    errors.push({ field: "skipHolidays", message: "祝日を除くかどうかは true か false で指定してください" });
++  }
++
+   const workStyle = parseWorkStyleInput(body.workStyle);
+   if (!workStyle.ok) {
+     errors.push(...workStyle.errors);
+@@ -65,13 +71,17 @@ export function parseBulkPreviewRequest(body: unknown): Result<BulkPreviewReques
+     !isDateString(endDate) ||
+     !Array.isArray(weekdays) ||
+     !weekdays.every(isWeekday) ||
++    typeof skipHolidays !== "boolean" ||
+     !workStyle.ok
+   ) {
+     return { ok: false, errors };
+   }
+   // Set で重なりを除き、小さい順に並べる
+   const unique = [...new Set(weekdays)].sort((a, b) => a - b);
+-  return { ok: true, value: { startDate, endDate, weekdays: unique, workStyle: workStyle.value } };
++  return {
++    ok: true,
++    value: { startDate, endDate, weekdays: unique, workStyle: workStyle.value, skipHolidays },
++  };
+ }
+ 
+ /**
+diff --git a/docs/textbook/07-utility-and-intersection-types.md b/docs/textbook/07-utility-and-intersection-types.md
+index 999e18e..f51cf83 100644
+--- a/docs/textbook/07-utility-and-intersection-types.md
++++ b/docs/textbook/07-utility-and-intersection-types.md
+@@ -108,6 +108,8 @@ export type BulkPreviewRequest = Omit<BulkInput, "workStyle"> & { workStyle: Wor
+ 
+ 一括設定の下見の API（`POST /api/daily-records/bulk/preview`）の本文です。期間と曜日は `BulkInput` と同じですが、勤務区分だけが違います。画面は出勤のとき `routeId` しか送らず（`WorkStyleInput`）、ルートの値はサーバーが登録済みのルートからコピーするからです。
+ 
++`Omit` は勤務区分だけを外すので、`skipHolidays`（祝日を除くか）のような `BulkInput` に足した項目は、何も書かなくても `BulkPreviewRequest` に入ります。
++
+ ## よくある間違いと、型エラーの読み方
+ 
+ ### 1. Pick に、無いプロパティの名前を書く（型エラーになる例）
+diff --git a/frontend/src/calendar/bulk-form.test.ts b/frontend/src/calendar/bulk-form.test.ts
+index ba4d0b6..270c02f 100644
+--- a/frontend/src/calendar/bulk-form.test.ts
++++ b/frontend/src/calendar/bulk-form.test.ts
+@@ -35,6 +35,10 @@ describe("toBulkPreviewRequest", () => {
+     expect(toBulkPreviewRequest(base).workStyle).toEqual({ kind: "commute", routeId: "r1" });
+   });
+ 
++  it("祝日を除く（skipHolidays: true）を送る", () => {
++    expect(toBulkPreviewRequest(base).skipHolidays).toBe(true);
++  });
++
+   it("在宅・休日はルートを送らない", () => {
+     expect(toBulkPreviewRequest({ ...base, kind: "holiday" }).workStyle).toEqual({ kind: "holiday" });
+   });
+diff --git a/frontend/src/calendar/bulk-form.ts b/frontend/src/calendar/bulk-form.ts
+index 252c81a..e2ab508 100644
+--- a/frontend/src/calendar/bulk-form.ts
++++ b/frontend/src/calendar/bulk-form.ts
+@@ -47,7 +47,14 @@ export function toggleWeekday(weekdays: readonly Weekday[], weekday: Weekday): W
+ export function toBulkPreviewRequest(values: BulkFormValues): BulkPreviewRequest {
+   const workStyle: WorkStyleInput =
+     values.kind === "commute" ? { kind: "commute", routeId: values.routeId } : { kind: values.kind };
+-  return { startDate: values.startDate, endDate: values.endDate, weekdays: values.weekdays, workStyle };
++  // 画面に「祝日を除く」のチェックができるまでは、既定の「除く」を送る（別の Task で欄にする）
++  return {
++    startDate: values.startDate,
++    endDate: values.endDate,
++    weekdays: values.weekdays,
++    workStyle,
++    skipHolidays: true,
++  };
+ }
+ 
+ /** API の項目の名前を、欄の名前に変える（"workStyle.routeId" も勤務区分の欄に出す） */
+diff --git a/frontend/src/calendar/daily-records-api.test.ts b/frontend/src/calendar/daily-records-api.test.ts
+index 5bf0e53..c9c79cf 100644
+--- a/frontend/src/calendar/daily-records-api.test.ts
++++ b/frontend/src/calendar/daily-records-api.test.ts
+@@ -44,7 +44,7 @@ describe("daily-records-api: 一括設定", () => {
+   it("下見と登録は POST で本文を JSON にして送る", async () => {
+     const fake = vi.fn(async () => new Response(JSON.stringify({ records: [], overwrittenDates: [], datesWithExtraTrips: [] }), { status: 200 }));
+     vi.stubGlobal("fetch", fake);
+-    const input = { startDate: "2026-11-01", endDate: "2026-11-30", weekdays: [1, 2, 3, 4, 5] as const, workStyle: { kind: "holiday" } as const };
++    const input = { startDate: "2026-11-01", endDate: "2026-11-30", weekdays: [1, 2, 3, 4, 5] as const, workStyle: { kind: "holiday" } as const, skipHolidays: true };
+     expect((await previewBulk({ ...input, weekdays: [...input.weekdays] })).ok).toBe(true);
+     expect(fake).toHaveBeenLastCalledWith("/api/daily-records/bulk/preview", expect.objectContaining({ method: "POST" }));
+ 
+diff --git a/shared/src/bulk.test.ts b/shared/src/bulk.test.ts
+index d300056..74e9554 100644
+--- a/shared/src/bulk.test.ts
++++ b/shared/src/bulk.test.ts
+@@ -8,7 +8,7 @@ const EVERY_DAY: Weekday[] = [0, 1, 2, 3, 4, 5, 6];
+ describe("bulkTargetDates", () => {
+   it("平日のみ: 2026-11-01（日）〜 11-08（日）は 11-02〜11-06 の5日", () => {
+     expect(
+-      bulkTargetDates({ startDate: "2026-11-01", endDate: "2026-11-08", weekdays: WEEKDAYS }),
++      bulkTargetDates({ startDate: "2026-11-01", endDate: "2026-11-08", weekdays: WEEKDAYS, skipHolidays: false }),
+     ).toEqual(["2026-11-02", "2026-11-03", "2026-11-04", "2026-11-05", "2026-11-06"]);
+   });
+ 
+@@ -17,6 +17,7 @@ describe("bulkTargetDates", () => {
+       startDate: "2026-11-01",
+       endDate: "2026-11-30",
+       weekdays: EVERY_DAY,
++      skipHolidays: false,
+     });
+     expect(dates).toHaveLength(30);
+     expect(dates[0]).toBe("2026-11-01");
+@@ -25,13 +26,13 @@ describe("bulkTargetDates", () => {
+ 
+   it("特定の曜日（月・水・金）だけを選ぶ", () => {
+     expect(
+-      bulkTargetDates({ startDate: "2026-11-01", endDate: "2026-11-14", weekdays: [1, 3, 5] }),
++      bulkTargetDates({ startDate: "2026-11-01", endDate: "2026-11-14", weekdays: [1, 3, 5], skipHolidays: false }),
+     ).toEqual(["2026-11-02", "2026-11-04", "2026-11-06", "2026-11-09", "2026-11-11", "2026-11-13"]);
+   });
+ 
+   it("土日だけ（休日を当てはめるときの使い方）", () => {
+     expect(
+-      bulkTargetDates({ startDate: "2026-11-01", endDate: "2026-11-08", weekdays: [0, 6] }),
++      bulkTargetDates({ startDate: "2026-11-01", endDate: "2026-11-08", weekdays: [0, 6], skipHolidays: false }),
+     ).toEqual(["2026-11-01", "2026-11-07", "2026-11-08"]);
+   });
+ 
+@@ -40,6 +41,7 @@ describe("bulkTargetDates", () => {
+       startDate: "2028-02-01",
+       endDate: "2028-02-29",
+       weekdays: EVERY_DAY,
++      skipHolidays: false,
+     });
+     expect(dates).toHaveLength(29);
+     expect(dates.at(-1)).toBe("2028-02-29");
+@@ -47,16 +49,72 @@ describe("bulkTargetDates", () => {
+ 
+   it("開始日と終了日が同じ日: 曜日が合えば1日、合わなければ0日", () => {
+     expect(
+-      bulkTargetDates({ startDate: "2026-11-02", endDate: "2026-11-02", weekdays: WEEKDAYS }),
++      bulkTargetDates({ startDate: "2026-11-02", endDate: "2026-11-02", weekdays: WEEKDAYS, skipHolidays: false }),
+     ).toEqual(["2026-11-02"]);
+     expect(
+-      bulkTargetDates({ startDate: "2026-11-01", endDate: "2026-11-01", weekdays: WEEKDAYS }),
++      bulkTargetDates({ startDate: "2026-11-01", endDate: "2026-11-01", weekdays: WEEKDAYS, skipHolidays: false }),
+     ).toEqual([]);
+   });
+ 
+   it("開始日が終了日より後なら空", () => {
+     expect(
+-      bulkTargetDates({ startDate: "2026-11-10", endDate: "2026-11-01", weekdays: EVERY_DAY }),
++      bulkTargetDates({ startDate: "2026-11-10", endDate: "2026-11-01", weekdays: EVERY_DAY, skipHolidays: false }),
+     ).toEqual([]);
+   });
++
++  describe("skipHolidays", () => {
++    // 2026-11-03（火）は文化の日、11-23（月）は勤労感謝の日
++    it("true: 祝日の 11-03 を除く", () => {
++      expect(
++        bulkTargetDates({
++          startDate: "2026-11-02",
++          endDate: "2026-11-06",
++          weekdays: WEEKDAYS,
++          skipHolidays: true,
++        }),
++      ).toEqual(["2026-11-02", "2026-11-04", "2026-11-05", "2026-11-06"]);
++    });
++
++    it("false: 祝日も対象に入れる", () => {
++      expect(
++        bulkTargetDates({
++          startDate: "2026-11-02",
++          endDate: "2026-11-06",
++          weekdays: WEEKDAYS,
++          skipHolidays: false,
++        }),
++      ).toContain("2026-11-03");
++    });
++
++    it("曜日の条件に合わない祝日は、もともと対象外", () => {
++      // 11-03（火）。月曜だけを選ぶと、skipHolidays に関わらず入らない
++      for (const skipHolidays of [true, false]) {
++        expect(
++          bulkTargetDates({ startDate: "2026-11-01", endDate: "2026-11-08", weekdays: [1], skipHolidays }),
++        ).toEqual(["2026-11-02"]);
++      }
++    });
++
++    it("祝日だけの期間は空になる", () => {
++      expect(
++        bulkTargetDates({
++          startDate: "2026-11-03",
++          endDate: "2026-11-03",
++          weekdays: EVERY_DAY,
++          skipHolidays: true,
++        }),
++      ).toEqual([]);
++    });
++
++    it("祝日の一覧に無い年は、除かれない", () => {
++      expect(
++        bulkTargetDates({
++          startDate: "2030-01-01",
++          endDate: "2030-01-01",
++          weekdays: EVERY_DAY,
++          skipHolidays: true,
++        }),
++      ).toEqual(["2030-01-01"]);
++    });
++  });
+ });
+diff --git a/shared/src/bulk.ts b/shared/src/bulk.ts
+index 1bbf70b..c940920 100644
+--- a/shared/src/bulk.ts
++++ b/shared/src/bulk.ts
+@@ -1,4 +1,5 @@
+ import { nextDate, weekdayOf, type DateString, type Weekday } from "./date";
++import { holidayName } from "./holidays";
+ import type { WorkStyle, WorkStyleInput } from "./work-style";
+ 
+ /** 一括設定の入力 */
+@@ -9,21 +10,28 @@ export type BulkInput = {
+   /** 対象の曜日（1つ以上） */
+   weekdays: Weekday[];
+   workStyle: WorkStyle;
++  /** 祝日を対象から除くか（要件定義 F3）。必須にして、送り忘れを型で防ぐ */
++  skipHolidays: boolean;
+ };
+ 
+ /**
+  * 一括設定の対象の日付を、古い順に返す（純粋関数）。
+  * 開始日から終了日までの日のうち、曜日が weekdays に含まれる日だけを選ぶ。
++ * skipHolidays が true なら、祝日（holidayName が名前を返す日）も除く。
++ * 祝日の一覧に無い年は祝日が無いものとして扱うので、何も除かれない。
+  *
+  * 入力が正しいか（日付が実在する・同じ月の中・曜日が1つ以上）は、API の受け口で確かめる。
+  * ここでは、開始日が終了日より後なら空の配列を返すだけにする。
+  */
+ export function bulkTargetDates(
+-  input: Pick<BulkInput, "startDate" | "endDate" | "weekdays">,
++  input: Pick<BulkInput, "startDate" | "endDate" | "weekdays" | "skipHolidays">,
+ ): DateString[] {
+   const result: DateString[] = [];
+   // YYYY-MM-DD は桁数がそろっているので、文字列のまま大小を比べられる
+   for (let date = input.startDate; date <= input.endDate; date = nextDate(date)) {
++    if (input.skipHolidays && holidayName(date) !== undefined) {
++      continue;
++    }
+     if (input.weekdays.includes(weekdayOf(date))) {
+       result.push(date);
+     }

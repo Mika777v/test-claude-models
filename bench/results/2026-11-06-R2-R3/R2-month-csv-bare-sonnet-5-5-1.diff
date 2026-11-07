@@ -1,0 +1,345 @@
+diff --git a/docs/textbook/18-string-building-and-escaping.md b/docs/textbook/18-string-building-and-escaping.md
+new file mode 100644
+index 0000000..f25ea09
+--- /dev/null
++++ b/docs/textbook/18-string-building-and-escaping.md
+@@ -0,0 +1,102 @@
++# 第18章 文字列の組み立てとエスケープ（CSV を作る）
++
++## この章で学ぶこと
++
++1. テンプレートリテラルと `join` による文字列の組み立て
++2. `flatMap`（1件から0件以上の行を作る）
++3. エスケープの考え方と、正規表現・`replaceAll` による書き方
++4. `Record<キーの型, 値の型>` で「ラベルの対応表」を作り、書き忘れを型で防ぐ
++
++題材は `shared/src/csv.ts`（F7 の CSV 出力）です。
++
++## 前提知識
++
++- 第6章（純粋関数とテスト）、第12章（`reduce`）、第14章（Map）
++
++| | Java | TypeScript |
++|---|---|---|
++| 文字列の埋め込み | `String.format("routepense-%s.csv", month)` | `` `routepense-${month}.csv` `` |
++| 文字列の連結 | `String.join(",", list)` | `list.join(",")` |
++| 全部置き換える | `s.replace("\"", "\"\"")`（`replace` は全部） | `s.replaceAll('"', '""')`（`replace` は最初の1つだけ） |
++| 正規表現で調べる | `Pattern.compile("[,\"\\r\\n]").matcher(s).find()` | `/[",\r\n]/.test(s)` |
++| 1件→0件以上の行 | `stream.flatMap(...)` | `array.flatMap(...)` |
++
++## 概念の説明
++
++### 1. 文字列を組み立てる
++
++`` ` `` で囲むテンプレートリテラルは、`${...}` に式を埋め込めます。`+` でつなぐより読みやすくなります。配列は `join` で、区切り文字を挟んで1つの文字列にできます。
++
++```ts
++export function csvFileName(month: string): string {
++  return `routepense-${month}.csv`;
++}
++["a", "b", "c"].join(","); // "a,b,c"
++```
++
++CSV は「値を `,` で `join` して1行にし、行を `\r\n` でつなぐ」だけの形式です。ただし、値の中に `,` や改行があると壊れます。そこで**エスケープ**が要ります。
++
++### 2. エスケープ
++
++**定義**: エスケープは、特別な意味を持つ文字を「ただの文字」として扱えるように書き換えることです。CSV（RFC 4180）の決まりは2つです。
++
++- 値に `,` ・改行・`"` のどれかがあれば、値全体を `"` で囲む
++- 囲んだ中の `"` は `""`（2つ）にする
++
++```ts
++export function escapeCsvField(value: string): string {
++  if (!/[",\r\n]/.test(value)) return value; // 何も無ければそのまま
++  return `"${value.replaceAll('"', '""')}"`;
++}
++escapeCsvField('say "hi"'); // "say ""hi"""   （前後の " も出力に含まれる）
++```
++
++注意点:
++
++- **囲む前に中身を置き換える**。順番が逆だと、囲みの `"` まで `""` になってしまいます。
++- `replace("\"", ...)` は最初の1つしか置き換えません。全部なら `replaceAll`（または `/"/g`）です。
++- 「必要な値だけ囲む」のでも「全部囲む」のでも、読み込む側は同じ結果になります。ここでは出力を読みやすくするため、必要な値だけ囲みます。
++- 先に値をエスケープしてから `join` します。`join` した後では、値のカンマと区切りのカンマを見分けられません。
++
++### 3. flatMap と、行の組み立て
++
++「1日分の記録」から作る行は、0行（在宅で追加なし）・1行・何行もあり得ます。`map` は1件から必ず1件を作るので、結果が `string[][][]` になってしまいます。`flatMap` は、各件が返した配列を1段つなげて平らにします。
++
++```ts
++records.flatMap((record) => rows_of(record)); // string[][]
++```
++
++行の元になる値は、エスケープ前の `string[]`（`monthCsvRows`）として返し、エスケープして文字列にする処理（`monthCsv`）と分けています。分けると、「金額の列の和が `monthlyFare` と合う」というテストを、エスケープを気にせず書けます。
++
++### 4. ラベルの対応表は Record で作る
++
++内部の値（`"train"`）を表示用の文字（`電車`）に変える対応表は、`Record<Transport, string>` で書きます。
++
++```ts
++const TRANSPORT_LABELS: Record<Transport, string> = { train: "電車", bus: "バス", other: "その他" };
++```
++
++`Transport` に値を足して、ここに足し忘れると型エラーになります（第2章の `switch` と `never` と同じ目的です）。
++
++## このアプリでの使い方
++
++- `shared/src/csv.ts` の `monthCsv(records)` が、BOM（`UTF8_BOM`）・見出し・明細の行を CRLF でつないだ全体を返します。画面はこの文字列をファイルにするだけです（U10）。
++- 純粋関数なので、テスト（`csv.test.ts`）は入力と出力の文字列を比べるだけで済みます。
++
++## 練習問題
++
++1. `escapeCsvField('a"b')` の結果を書いてください。
++2. `escapeCsvField` の中で、先に `"` で囲んでから `replaceAll` すると、`a,b` はどうなりますか。
++3. `[[1, 2], [], [3]].flatMap((x) => x)` と `.map((x) => x)` の結果の違いを答えてください。
++
++## 理解の確認
++
++CSV の各値を `join(",")` してから、行全体に `escapeCsvField` をかけてはいけないのはなぜですか。
++
++## 解答
++
++1. `"a""b"`（前後の `"` を含めて5文字）。
++2. 先に囲むと `"a,b"` の両端の `"` まで `""` になり、`"""a,b"""` という壊れた値になります。置き換えが先、囲むのが後です。
++3. `flatMap` は `[1, 2, 3]`、`map` は `[[1, 2], [], [3]]`。`flatMap` は返された配列を1段平らにします。
++
++理解の確認の答え: 区切りのカンマも値の中のカンマも、同じ `,` になって見分けられなくなり、行全体が1つの値として囲まれてしまうからです。値を1つずつエスケープしてから `join` します。
+diff --git a/docs/textbook/README.md b/docs/textbook/README.md
+index a01fc4f..c105344 100644
+--- a/docs/textbook/README.md
++++ b/docs/textbook/README.md
+@@ -22,6 +22,7 @@
+ | 15 | [15-dependency-injection.md](15-dependency-injection.md) | インターフェースと実装の差し替え（依存性の注入） | MVP の後 経路検索の API |
+ | 16 | [16-promise-and-async-await.md](16-promise-and-async-await.md) | 待つ処理の型（Promise と async / await） | MVP の後 経路検索の画面 |
+ | 17 | [17-generics.md](17-generics.md) | ジェネリクス（型を引数にとる型と関数） | 第4・5・7・16章のまとめ（`Result<T>`・`request<T>`・`K extends keyof`） |
++| 18 | [18-string-building-and-escaping.md](18-string-building-and-escaping.md) | 文字列の組み立てとエスケープ（テンプレートリテラル・`join`・`flatMap`・`Record`） | MVP の後 CSV 出力（F7） |
+ 
+ これから書く予定の章（`terms-memo.md` を材料にします）:
+ 
+diff --git a/shared/src/csv.test.ts b/shared/src/csv.test.ts
+new file mode 100644
+index 0000000..12f6ac8
+--- /dev/null
++++ b/shared/src/csv.test.ts
+@@ -0,0 +1,103 @@
++import { describe, expect, it } from "vitest";
++import { CSV_HEADER, UTF8_BOM, csvFileName, escapeCsvField, monthCsv, monthCsvRows } from "./csv";
++import type { DailyRecord } from "./daily-record";
++import { monthlyFare } from "./fare";
++import type { ExtraTrip } from "./extra-trip";
++
++type Rec = Pick<DailyRecord, "date" | "workStyle" | "extraTrips">;
++
++const route = { name: "自宅↔本社", from: "自宅", to: "本社", transport: "train", oneWayFare: 320 } as const;
++const trip = (overrides: Partial<ExtraTrip> = {}): ExtraTrip => ({
++  id: "t1",
++  from: "本社",
++  to: "客先B",
++  transport: "bus",
++  oneWayFare: 200,
++  tripType: "oneWay",
++  ...overrides,
++});
++
++const commute: Rec = { date: "2026-11-04", workStyle: { kind: "commute", routeId: "r1", route }, extraTrips: [] };
++
++describe("monthCsvRows", () => {
++  it("出勤日の通常ルートは往復で1行（曜日・祝日つき）", () => {
++    expect(monthCsvRows([{ ...commute, date: "2026-11-03" }])).toEqual([
++      ["2026-11-03", "火", "文化の日", "出勤", "通常", "自宅", "本社", "電車", "往復", "320", "640", "自宅↔本社", ""],
++    ]);
++  });
++
++  it("追加の移動は1件ごとに1行。ルート名は空、目的は入る", () => {
++    const rows = monthCsvRows([
++      {
++        ...commute,
++        extraTrips: [trip({ purpose: "客先B打合せ" }), trip({ id: "t2", tripType: "roundTrip" })],
++      },
++    ]);
++    expect(rows).toHaveLength(3);
++    expect(rows[1]).toEqual(["2026-11-04", "水", "", "出勤", "追加", "本社", "客先B", "バス", "片道", "200", "200", "", "客先B打合せ"]);
++    expect(rows[2]?.slice(8, 13)).toEqual(["往復", "200", "400", "", ""]);
++  });
++
++  it("在宅・休日で追加の移動が無い日は行を作らない。追加があれば行になる", () => {
++    const rows = monthCsvRows([
++      { date: "2026-11-05", workStyle: { kind: "remote" }, extraTrips: [] },
++      { date: "2026-11-07", workStyle: { kind: "holiday" }, extraTrips: [] },
++      { date: "2026-11-08", workStyle: { kind: "holiday" }, extraTrips: [trip()] },
++    ]);
++    expect(rows).toHaveLength(1);
++    expect(rows[0]?.slice(0, 5)).toEqual(["2026-11-08", "日", "", "休日", "追加"]);
++  });
++
++  it("すべての行が見出しと同じ列数", () => {
++    const rows = monthCsvRows([{ ...commute, extraTrips: [trip()] }]);
++    for (const row of rows) expect(row).toHaveLength(CSV_HEADER.length);
++  });
++});
++
++describe("escapeCsvField", () => {
++  it("ふつうの値はそのまま", () => {
++    expect(escapeCsvField("自宅↔本社")).toBe("自宅↔本社");
++    expect(escapeCsvField("")).toBe("");
++  });
++
++  it("カンマ・改行・\" を含む値は \" で囲み、\" は二重にする", () => {
++    expect(escapeCsvField("a,b")).toBe('"a,b"');
++    expect(escapeCsvField("a\nb")).toBe('"a\nb"');
++    expect(escapeCsvField("a\r\nb")).toBe('"a\r\nb"');
++    expect(escapeCsvField('say "hi"')).toBe('"say ""hi"""');
++  });
++});
++
++describe("monthCsv", () => {
++  it("BOM・見出し・CRLF で、特殊文字を含む値はエスケープされる", () => {
++    const csv = monthCsv([{ ...commute, extraTrips: [trip({ purpose: 'A社, "B"\n打合せ' })] }]);
++    expect(csv.startsWith(UTF8_BOM + CSV_HEADER.join(",") + "\r\n")).toBe(true);
++    expect(csv.endsWith("\r\n")).toBe(true);
++    expect(csv).toContain('"A社, ""B""\n打合せ"');
++    // 値の中の改行（LF）を除くと、行区切りはすべて CRLF
++    expect(csv.replaceAll("\r\n", "").includes("\r")).toBe(false);
++  });
++
++  it("記録が無ければ見出しだけ", () => {
++    expect(monthCsv([])).toBe(UTF8_BOM + CSV_HEADER.join(",") + "\r\n");
++  });
++
++  it("金額の列の和が monthlyFare の合計と一致する", () => {
++    const records: Rec[] = [
++      { ...commute, extraTrips: [trip(), trip({ id: "t2", tripType: "roundTrip", oneWayFare: 150 })] },
++      { date: "2026-11-05", workStyle: { kind: "remote" }, extraTrips: [trip({ oneWayFare: 480 })] },
++      { date: "2026-11-06", workStyle: { kind: "holiday" }, extraTrips: [] },
++      { ...commute, date: "2026-11-09" },
++    ];
++    const amountIndex = CSV_HEADER.indexOf("金額");
++    const sum = monthCsvRows(records).reduce((acc, row) => acc + Number(row[amountIndex]), 0);
++    expect(sum).toBe(monthlyFare(records).total);
++    expect(sum).toBe(640 + 200 + 300 + 480 + 640);
++  });
++});
++
++describe("csvFileName", () => {
++  it("routepense-YYYY-MM.csv", () => {
++    expect(csvFileName("2026-11")).toBe("routepense-2026-11.csv");
++  });
++});
+diff --git a/shared/src/csv.ts b/shared/src/csv.ts
+new file mode 100644
+index 0000000..6b8e467
+--- /dev/null
++++ b/shared/src/csv.ts
+@@ -0,0 +1,98 @@
++import type { DailyRecord } from "./daily-record";
++import { weekdayOf } from "./date";
++import type { Weekday } from "./date";
++import { extraTripFare } from "./fare";
++import { holidayName } from "./holidays";
++import type { Transport } from "./route";
++import type { WorkStyleKind } from "./work-style";
++
++/** CSV の1行目（F7 の列の順） */
++export const CSV_HEADER: readonly string[] = [
++  "日付",
++  "曜日",
++  "祝日",
++  "勤務区分",
++  "種別",
++  "出発地",
++  "到着地",
++  "交通手段",
++  "片道/往復",
++  "片道運賃",
++  "金額",
++  "ルート名",
++  "目的",
++];
++
++/** ファイルの先頭に付ける BOM（Excel が UTF-8 と判断できるようにする） */
++export const UTF8_BOM = "﻿";
++
++const CRLF = "\r\n";
++
++// Record<キーの型, 値の型> にすると、種類を増やして書き忘れたときに型エラーになる
++const WEEKDAY_LABELS: Record<Weekday, string> = { 0: "日", 1: "月", 2: "火", 3: "水", 4: "木", 5: "金", 6: "土" };
++const WORK_STYLE_LABELS: Record<WorkStyleKind, string> = { remote: "在宅", commute: "出勤", holiday: "休日" };
++const TRANSPORT_LABELS: Record<Transport, string> = { train: "電車", bus: "バス", other: "その他" };
++
++/** CSV の行の元になる記録。DailyRecord のうち、CSV に要る部分だけ */
++type CsvRecord = Pick<DailyRecord, "date" | "workStyle" | "extraTrips">;
++
++/**
++ * 月の記録から、CSV の明細の行（エスケープする前の値）を作る。
++ * 出勤日の通常ルートで1行、追加の移動1件ごとに1行。記録の順のまま出す（並べ替えない）。
++ * 在宅・休日の通常の分は 0 円なので行にしない。
++ */
++export function monthCsvRows(records: readonly CsvRecord[]): string[][] {
++  return records.flatMap((record) => {
++    const { date, workStyle } = record;
++    // 日付・曜日・祝日・勤務区分は、その日の行すべてで同じ
++    const head = [date, WEEKDAY_LABELS[weekdayOf(date)], holidayName(date) ?? "", WORK_STYLE_LABELS[workStyle.kind]];
++    const rows: string[][] = [];
++    if (workStyle.kind === "commute") {
++      const { route } = workStyle;
++      rows.push([
++        ...head,
++        "通常",
++        route.from,
++        route.to,
++        TRANSPORT_LABELS[route.transport],
++        "往復",
++        String(route.oneWayFare),
++        String(route.oneWayFare * 2),
++        route.name,
++        "",
++      ]);
++    }
++    for (const trip of record.extraTrips) {
++      rows.push([
++        ...head,
++        "追加",
++        trip.from,
++        trip.to,
++        TRANSPORT_LABELS[trip.transport],
++        trip.tripType === "roundTrip" ? "往復" : "片道",
++        String(trip.oneWayFare),
++        String(extraTripFare(trip)),
++        "",
++        trip.purpose ?? "",
++      ]);
++    }
++    return rows;
++  });
++}
++
++/** 値を1つ、CSV の欄にする（RFC 4180）。カンマ・改行・" があれば " で囲み、中の " は "" にする */
++export function escapeCsvField(value: string): string {
++  if (!/[",\r\n]/.test(value)) return value;
++  return `"${value.replaceAll('"', '""')}"`;
++}
++
++/** CSV のファイルの中身全体。BOM 付き・CRLF で、最後の行にも CRLF を付ける */
++export function monthCsv(records: readonly CsvRecord[]): string {
++  const lines = [CSV_HEADER, ...monthCsvRows(records)].map((row) => row.map(escapeCsvField).join(","));
++  return UTF8_BOM + lines.map((line) => line + CRLF).join("");
++}
++
++/** ファイル名。month は YYYY-MM（例: 2026-11 → routepense-2026-11.csv） */
++export function csvFileName(month: string): string {
++  return `routepense-${month}.csv`;
++}
+diff --git a/shared/src/index.ts b/shared/src/index.ts
+index d4e8be2..0c8fd02 100644
+--- a/shared/src/index.ts
++++ b/shared/src/index.ts
+@@ -3,6 +3,7 @@
+ export type { ApiError, FieldError } from "./api";
+ export type { BulkInput, BulkPreviewRequest, BulkSaveRequest } from "./bulk";
+ export { bulkTargetDates } from "./bulk";
++export { CSV_HEADER, UTF8_BOM, csvFileName, escapeCsvField, monthCsv, monthCsvRows } from "./csv";
+ export type { DailyRecord, DailyRecordInput } from "./daily-record";
+ export type { DateString, Weekday } from "./date";
+ export { nextDate, weekdayOf } from "./date";
