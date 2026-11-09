@@ -114,6 +114,7 @@ node bench/summarize.mjs <結果>/results.tsv --declare <結果>/declare.tsv --d
 - 重みは `--weights 決め方,申告,形`（既定 `0.4,0.4,0.2`）。変えたら結果の README に書く
 - 決め方のテストが無い Task（`decision_*` が無い）・申告の点の無い回がある条件は、その軸を外して残りの重みで割り直し、Q に `*` を付ける
 - トークンの内訳の無い古い表は、入力トークンの代わりに合計（出力も含む）を使う
+- `results.tsv` はいくつでも並べてよい（測定をまたいで1つの表にする）。要件の段階の費用は `--spec <spec-usage.tsv>` で足す。決め方のテストが無い Task（T4・T5 など）は、オーナーの答えと同じに決めた割合を人が `decision.tsv`（run・point）に書き、`--decision` で渡す
 
 ## Task を足す
 
