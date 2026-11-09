@@ -27,11 +27,12 @@
 | R1（過去の PR #63 をやり直す。[#11](https://github.com/Mika777v/test-claude-models/issues/11)） | 終わった | [results/2026-11-06-R1](../bench/results/2026-11-06-R1/README.md) | 9回とも実際とほぼ同じ物（正しさ 9/9・決め方 8/9）。確認の申告は bare でも 3/3（土台の ADR に書いてあった）。差は形だけ。教科書は CLAUDE.md にあっても 0/3。土台の ADR に作り方まで書いてあり、易しすぎた |
 | R2・R3（過去の PR #84・#53。ADR-0004 の指標） | 終わった | [results/2026-11-06-R2-R3](../bench/results/2026-11-06-R2-R3/README.md) | 正しさ 18/18・決め方は条件で差なし・確認に回しすぎ 0/18。template だけが「確認が必要な項目: なし」と書き、形もそろえた（費用は 2〜3割高い）。節を書かない回の申告の点しだいで R2 の Y の順位が入れ替わる |
 | T4・T5 を指標で測り直す（[#16](https://github.com/Mika777v/test-claude-models/issues/16)。AI は動かさず、保存した結果から） | 終わった | [results/2026-11-09-T4-T5-score](../bench/results/2026-11-09-T4-T5-score/README.md) | 要件の段階の Y は T4・T5 ともいちばん低い（Q は最高だが費用 4〜6倍）。T5 は template-biz が最良（3.50）。テンプレートに要件の段階は入れない。オーナーの答え（T5 の (a)〜(d)・T4）を `decision.tsv` に入れた |
+| Haiku で template-biz（T4・T5。#16 の続き） | 終わった | [results/2026-11-09-haiku-biz](../bench/results/2026-11-09-haiku-biz/README.md) | Haiku でも template-biz は効いた（T5 の申告 3/3・Q 0.90）。Haiku はトークンが Sonnet の 3〜4倍で、Y_tok（主）では Sonnet が上、ドルでは Haiku が上（T5 は1回 $0.06）。6回で $1.01 |
 
 ## 次にやること
 
 1. **次の測定（オーナーが決めた順）**。どれも「動かして」と言われてから `run` する
-   1. Haiku で template-biz（T4・T5 × 3回。T4・T5 で最良だった組み合わせの確かめ）
+   1. ~~Haiku で template-biz~~ → 終わった
    2. T5 の minimal × 3回（#16 の残り）
    3. B（要件定義から一から作る）: 1つの Epic（ルートの管理）で `template` を1回だけ動かして費用を見る
    - Y の分母は入力トークン（[ADR-0007](adr/0007-cost-by-input-tokens.md)）。ドルの Y も並べる
